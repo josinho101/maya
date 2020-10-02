@@ -4,9 +4,13 @@ I dont know yet :)
 
 ## General info
 
-##### Create virtual environment and select it 
+##### Create virtual environment
 ```
 py -3 -m venv .venv
+```
+
+##### Activate virtual environment
+```
 .venv\scripts\activate
 ```
 
