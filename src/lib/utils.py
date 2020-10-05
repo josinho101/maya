@@ -2,9 +2,10 @@ import csv
 import uuid
 
 
-def read_csv(path):
+def read_csv_without_header(path):
     file = open(path, 'r')
     try:
+        file.readline()
         reader = csv.reader(file, delimiter=',')
         data = list(reader)
         return data
@@ -12,5 +13,5 @@ def read_csv(path):
         file.close()
 
 
-def get_uuid():
+def generate_uuid():
     return uuid.uuid4()
