@@ -1,6 +1,7 @@
 from . import utils
 from .models.subject import Subject
 import cv2
+import face_recognition
 
 
 class FaceRecognizer:
@@ -18,7 +19,7 @@ class FaceRecognizer:
             filename = self.__image_base_path + '/' + image_name
             image = cv2.imread(filename)
             subject = Subject(subject_name, image_name)
-            subject.image = image
+            # find encoding
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            subject.image = face_recognition.face_encodings(image)[0]
             self.__subjects.append(subject)
-
-        # find encodings of images
