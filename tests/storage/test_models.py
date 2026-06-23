@@ -16,6 +16,9 @@ from maya.storage.models import (
 
 PROJECT_JSON = {
     "id": "acme-webapp",
+    "name": "Acme Webapp",
+    "description": None,
+    "archived": False,
     "test_types": ["ui", "api"],
     "default_environment": "staging",
     "environments": ["dev", "staging", "prod"],
@@ -28,6 +31,7 @@ PROJECT_JSON = {
 ENVIRONMENT_JSON = {
     "id": "staging",
     "label": "Staging",
+    "archived": False,
     "schedule": {"cron": "0 */6 * * *"},
     "is_destructive_safe": True,
     "packages": {

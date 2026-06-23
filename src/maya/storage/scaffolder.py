@@ -10,6 +10,12 @@ from maya.storage.models import Environment, Project
 _ENV_SUBDIRS = ("view_snapshots", "specs", "runs", "healing_logs")
 
 
+def scaffold_environment(env_dir: Path, env: Environment) -> None:
+    for subdir in _ENV_SUBDIRS:
+        (env_dir / subdir).mkdir(parents=True, exist_ok=True)
+    atomic_write_json(env_dir / "environment.json", env)
+
+
 def scaffold_project(
     root_dir: Path, project: Project, environments: dict[str, Environment]
 ) -> None:
@@ -29,7 +35,4 @@ def scaffold_project(
     atomic_write_json(root_dir / "project.json", project)
 
     for env_id, env in environments.items():
-        env_dir = root_dir / "environments" / env_id
-        for subdir in _ENV_SUBDIRS:
-            (env_dir / subdir).mkdir(parents=True, exist_ok=True)
-        atomic_write_json(env_dir / "environment.json", env)
+        scaffold_environment(root_dir / "environments" / env_id, env)

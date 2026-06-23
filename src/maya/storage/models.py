@@ -34,6 +34,9 @@ class ConcurrencyConfig(BaseModel):
 
 class Project(BaseModel):
     id: str
+    name: str
+    description: str | None = None
+    archived: bool = False
     test_types: list[Literal["ui", "api"]]
     default_environment: str
     environments: list[str]
@@ -81,6 +84,7 @@ class ScheduleConfig(BaseModel):
 class Environment(BaseModel):
     id: str
     label: str
+    archived: bool = False
     schedule: ScheduleConfig | None = None
     is_destructive_safe: bool = False
     packages: dict[str, UIPackage | APIPackage] = Field(default_factory=dict)

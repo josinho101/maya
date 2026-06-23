@@ -1,11 +1,16 @@
 import { Drawer, List, ListItemButton, ListItemText, Toolbar } from "@mui/material";
 import { NavLink, useLocation } from "react-router-dom";
-import { NAV_ITEMS } from "./navItems";
+import { buildProjectNavItems } from "./navItems";
 
 const DRAWER_WIDTH = 220;
 
-export default function NavDrawer() {
+interface ProjectDrawerProps {
+  projectId: string;
+}
+
+export default function ProjectDrawer({ projectId }: ProjectDrawerProps) {
   const location = useLocation();
+  const items = buildProjectNavItems(projectId);
 
   return (
     <Drawer
@@ -18,12 +23,12 @@ export default function NavDrawer() {
     >
       <Toolbar />
       <List component="nav" aria-label="primary navigation">
-        {NAV_ITEMS.map((item) => (
+        {items.map((item) => (
           <ListItemButton
             key={item.path}
             component={NavLink}
             to={item.path}
-            selected={location.pathname === item.path}
+            selected={location.pathname.startsWith(item.path)}
           >
             <ListItemText primary={item.label} />
           </ListItemButton>

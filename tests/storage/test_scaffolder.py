@@ -9,6 +9,7 @@ from maya.storage.scaffolder import scaffold_project
 def make_project() -> Project:
     return Project(
         id="acme-webapp",
+        name="Acme Webapp",
         test_types=["ui"],
         default_environment="dev",
         environments=["dev", "staging"],

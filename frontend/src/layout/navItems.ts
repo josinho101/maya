@@ -3,10 +3,13 @@ export interface NavItem {
   path: string;
 }
 
-export const NAV_ITEMS: NavItem[] = [
-  { label: "Projects", path: "/projects" },
-  { label: "Test Cases", path: "/test-cases" },
-  { label: "Runs", path: "/runs" },
-  { label: "Healing", path: "/healing" },
-  { label: "Notifications", path: "/notifications" },
-];
+export function buildProjectNavItems(projectId: string): NavItem[] {
+  const base = `/projects/${projectId}`;
+  return [
+    { label: "Environments", path: `${base}/environments` },
+    { label: "Test Cases", path: `${base}/test-cases` },
+    { label: "Runs", path: `${base}/runs` },
+    { label: "Healing", path: `${base}/healing` },
+    { label: "Notifications", path: `${base}/notifications` },
+  ];
+}

@@ -35,3 +35,5 @@ framework-data/runtime/
 # Frontend
 frontend/node_modules/
 frontend/dist/
+
+framework-data/
