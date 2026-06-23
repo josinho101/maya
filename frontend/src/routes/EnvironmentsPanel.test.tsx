@@ -33,6 +33,7 @@ const PROJECT: Project = {
   name: "Acme",
   description: null,
   archived: false,
+  created_at: "2026-06-22T00:00:00Z",
   test_types: ["ui"],
   default_environment: "dev",
   environments: ["dev"],

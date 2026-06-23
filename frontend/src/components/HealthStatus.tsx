@@ -15,7 +15,7 @@ export default function HealthStatus() {
   }, []);
 
   const label =
-    status === "checking" ? "Checking API..." : status === "ok" ? "API: ok" : "API: unreachable";
+    status === "checking" ? "Connecting..." : status === "ok" ? "Server Connected" : "API: Server Unreachable";
   const color = status === "ok" ? "success" : status === "error" ? "error" : "default";
 
   return <Chip size="small" label={label} color={color} />;

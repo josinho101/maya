@@ -11,6 +11,7 @@ export interface Project {
   name: string;
   description: string | null;
   archived: boolean;
+  created_at: string;
   test_types: TestType[];
   default_environment: string;
   environments: string[];

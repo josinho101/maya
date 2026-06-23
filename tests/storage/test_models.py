@@ -19,6 +19,7 @@ PROJECT_JSON = {
     "name": "Acme Webapp",
     "description": None,
     "archived": False,
+    "created_at": "2026-06-22T00:00:00Z",
     "test_types": ["ui", "api"],
     "default_environment": "staging",
     "environments": ["dev", "staging", "prod"],

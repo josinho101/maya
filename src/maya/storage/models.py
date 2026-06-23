@@ -3,7 +3,7 @@ view snapshot, run summary, healing event) per plan.md §3.4."""
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field, TypeAdapter
@@ -37,6 +37,7 @@ class Project(BaseModel):
     name: str
     description: str | None = None
     archived: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     test_types: list[Literal["ui", "api"]]
     default_environment: str
     environments: list[str]

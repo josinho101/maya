@@ -22,6 +22,7 @@ const PROJECTS: Project[] = [
     name: "Acme",
     description: "An acme project",
     archived: false,
+    created_at: "2026-06-22T00:00:00Z",
     test_types: ["ui"],
     default_environment: "dev",
     environments: [],

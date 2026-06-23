@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
-import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import AddIcon from "@mui/icons-material/Add";
 import {
   Box,
+  Button,
   Card,
   CardActions,
   CardContent,
@@ -83,17 +84,24 @@ export default function ProjectsPage() {
                     {project.description}
                   </Typography>
                 </Tooltip>
+                <Typography variant="caption" color="text.disabled" sx={{ display: "block", mt: 1 }}>
+                  Created {new Date(project.created_at).toLocaleDateString()}
+                </Typography>
               </CardContent>
               <CardActions sx={{ justifyContent: "space-between" }}>
-                <IconButton
+                <Button
                   aria-label={`open ${project.name}`}
+                  variant="contained"
+                  size="small"
+                  endIcon={<ArrowForwardIcon />}
+                  sx={{ borderRadius: 999 }}
                   onClick={(e) => {
                     e.stopPropagation();
                     navigate(`/projects/${project.id}`);
                   }}
                 >
-                  <FolderOpenIcon />
-                </IconButton>
+                  OPEN
+                </Button>
                 <Box>
                   <IconButton
                     aria-label={`edit ${project.name}`}
@@ -106,6 +114,7 @@ export default function ProjectsPage() {
                   </IconButton>
                   <IconButton
                     aria-label={`delete ${project.name}`}
+                    color="error"
                     onClick={(e) => {
                       e.stopPropagation();
                       setDeleteTarget(project);
