@@ -98,6 +98,65 @@ Routine replay runs (no AI needed) execute fully in parallel across projects and
 
 ---
 
+## Running locally
+
+### Prerequisites
+
+- Python 3.11+
+- Node 18.18+ (or 20+) and npm
+- [`uv`](https://docs.astral.sh/uv/) — `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- [Ollama](https://ollama.com) installed separately, with `qwen2.5-vl:7b`, `qwen2.5-vl:3b`, and `qwen2.5:7b-instruct` pulled (see `scripts/check_ollama.py`)
+
+### Backend (FastAPI)
+
+```bash
+uv venv
+source .venv/bin/activate
+uv pip install -e .[dev]
+playwright install
+make dev
+```
+
+- API: http://localhost:9091
+- Swagger UI: http://localhost:9091/docs
+- ReDoc: http://localhost:9091/redoc
+
+### Frontend (React + MUI)
+
+```bash
+cd frontend
+npm install
+cp .env.example .env
+npm run dev
+```
+
+- Dashboard: http://localhost:9090
+
+### Tests & lint
+
+```bash
+make test            # backend pytest
+make lint             # backend ruff
+cd frontend && npm run test   # frontend Vitest
+cd frontend && npm run lint   # frontend eslint
+```
+
+### Ollama sanity check
+
+```bash
+make check-ollama
+```
+
+### Keeping `requirements.txt` in sync
+
+`pyproject.toml` is the source of truth for Python dependencies. `requirements.txt`/`requirements-dev.txt` are generated from it for tools that expect plain pip-style files — regenerate after any dependency change:
+
+```bash
+make requirements
+```
+
+---
+
 ## Learn more
 
 This README is intentionally short. For the full feasibility study — model sizing, detailed workflows, data schemas, risks, and the complete API-testing design — see [`features/plan.md`](features/plan.md).

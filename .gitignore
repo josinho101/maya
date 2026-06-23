@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# uv
+.uv-cache/
+
+# Test / coverage / tool caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+
+# MAYA runtime data (plan.md §3.3) — framework-data/ lives in repo working dir at runtime
+framework-data/config/secure/
+framework-data/logs/
+framework-data/runtime/
+*.local.json
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
