@@ -91,6 +91,17 @@ class Environment(BaseModel):
     packages: dict[str, UIPackage | APIPackage] = Field(default_factory=dict)
 
 
+class EnvironmentImportManifest(BaseModel):
+    """Shape of the `environment.json` inside an environment import/sample zip."""
+
+    tag: str
+    schedule: ScheduleConfig | None = None
+    is_destructive_safe: bool = False
+    base_url: str = ""
+    auth: AuthConfig | None = None
+    env_vars: dict[str, str] = Field(default_factory=dict)
+
+
 # --- Test case schemas (F1-030) -----------------------------------------------------------
 
 

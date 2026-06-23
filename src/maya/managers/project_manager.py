@@ -5,6 +5,7 @@ deal in project/environment ids, never paths."""
 from __future__ import annotations
 
 import re
+import shutil
 from pathlib import Path
 from typing import Any, Literal
 
@@ -163,13 +164,19 @@ class ProjectManager:
         atomic_write_json(self._project_json_path(project_id), project)
         return project
 
-    def delete_project(self, project_id: str) -> Project:
+    def archive_project(self, project_id: str) -> Project:
         project = self.get_project(project_id)
         if project.archived:
             raise ArchivedError(project_id)
         project = project.model_copy(update={"archived": True})
         atomic_write_json(self._project_json_path(project_id), project)
         return project
+
+    def delete_project(self, project_id: str) -> None:
+        project_dir = self._project_dir(project_id)
+        if not project_dir.exists():
+            raise ProjectNotFoundError(project_id)
+        shutil.rmtree(project_dir)
 
     # --- F3-020 --------------------------------------------------------------
 
@@ -199,8 +206,12 @@ class ProjectManager:
         atomic_write_json(self._project_json_path(project_id), project)
         return env
 
-    def _check_env_tag_not_taken(self, project: Project, tag: str) -> None:
+    def _check_env_tag_not_taken(
+        self, project: Project, tag: str, exclude_env_id: str | None = None
+    ) -> None:
         for env_id in project.environments:
+            if env_id == exclude_env_id:
+                continue
             env = self.get_environment(project.id, env_id)
             if env.archived:
                 continue
@@ -213,13 +224,64 @@ class ProjectManager:
             raise EnvironmentNotFoundError(env_id)
         return Environment.model_validate_json(path.read_bytes())
 
-    def delete_environment(self, project_id: str, env_id: str) -> Environment:
+    def update_environment(
+        self,
+        project_id: str,
+        env_id: str,
+        label: str | None = None,
+        schedule: ScheduleConfig | None = None,
+        is_destructive_safe: bool | None = None,
+    ) -> Environment:
+        env = self.get_environment(project_id, env_id)
+        if env.archived:
+            raise ArchivedError(env_id)
+
+        if label is not None and label != env.label:
+            project = self.get_project(project_id)
+            self._check_env_tag_not_taken(project, label, exclude_env_id=env_id)
+
+        updates: dict[str, Any] = {}
+        if label is not None:
+            updates["label"] = label
+        if schedule is not None:
+            updates["schedule"] = schedule
+        if is_destructive_safe is not None:
+            updates["is_destructive_safe"] = is_destructive_safe
+
+        env = env.model_copy(update=updates)
+        atomic_write_json(self._env_json_path(project_id, env_id), env)
+        return env
+
+    def list_environments(self, project_id: str, include_archived: bool = False) -> list[Environment]:
+        project = self.get_project(project_id)
+        environments = []
+        for env_id in project.environments:
+            env = self.get_environment(project_id, env_id)
+            if env.archived and not include_archived:
+                continue
+            environments.append(env)
+        return environments
+
+    def archive_environment(self, project_id: str, env_id: str) -> Environment:
         env = self.get_environment(project_id, env_id)
         if env.archived:
             raise ArchivedError(env_id)
         env = env.model_copy(update={"archived": True})
         atomic_write_json(self._env_json_path(project_id, env_id), env)
         return env
+
+    def delete_environment(self, project_id: str, env_id: str) -> None:
+        env_dir = self._env_dir(project_id, env_id)
+        if not env_dir.exists():
+            raise EnvironmentNotFoundError(env_id)
+        shutil.rmtree(env_dir)
+
+        project = self.get_project(project_id)
+        if env_id in project.environments:
+            project = project.model_copy(
+                update={"environments": [e for e in project.environments if e != env_id]}
+            )
+            atomic_write_json(self._project_json_path(project_id), project)
 
     # --- F3-030 ----------------------------------------------------------------
 

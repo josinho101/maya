@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import ArchiveIcon from "@mui/icons-material/Archive";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
@@ -28,6 +29,7 @@ export default function ProjectsPage() {
   const [dialog, setDialog] = useState<{ mode: "create" | "edit"; project?: Project } | null>(
     null,
   );
+  const [archiveTarget, setArchiveTarget] = useState<Project | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
 
   const refresh = () => {
@@ -43,6 +45,13 @@ export default function ProjectsPage() {
         ? current.map((p) => (p.id === project.id ? project : p))
         : [...current, project];
     });
+  };
+
+  const handleArchive = async () => {
+    if (!archiveTarget) return;
+    await apiClient.archiveProject(archiveTarget.id);
+    setProjects((current) => current.filter((p) => p.id !== archiveTarget.id));
+    setArchiveTarget(null);
   };
 
   const handleDelete = async () => {
@@ -113,6 +122,15 @@ export default function ProjectsPage() {
                     <EditIcon />
                   </IconButton>
                   <IconButton
+                    aria-label={`archive ${project.name}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setArchiveTarget(project);
+                    }}
+                  >
+                    <ArchiveIcon />
+                  </IconButton>
+                  <IconButton
                     aria-label={`delete ${project.name}`}
                     color="error"
                     onClick={(e) => {
@@ -147,9 +165,19 @@ export default function ProjectsPage() {
       />
 
       <ConfirmDeleteDialog
+        open={archiveTarget !== null}
+        title="Archive project"
+        message={`Archive "${archiveTarget?.name}"? It will be hidden from this list, but its files stay on disk.`}
+        confirmLabel="Archive"
+        confirmColor="warning"
+        onConfirm={handleArchive}
+        onClose={() => setArchiveTarget(null)}
+      />
+
+      <ConfirmDeleteDialog
         open={deleteTarget !== null}
         title="Delete project"
-        message={`Delete "${deleteTarget?.name}"? It will be archived, not removed from disk.`}
+        message={`Permanently delete "${deleteTarget?.name}" and all its data? This cannot be undone.`}
         onConfirm={handleDelete}
         onClose={() => setDeleteTarget(null)}
       />

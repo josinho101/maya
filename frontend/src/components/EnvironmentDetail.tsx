@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import DeleteIcon from "@mui/icons-material/Delete";
+import { useParams } from "react-router-dom";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import {
   Box,
   Button,
   Divider,
-  IconButton,
   MenuItem,
   Select,
   TextField,
@@ -14,7 +12,6 @@ import {
   Typography,
 } from "@mui/material";
 import { apiClient, type Environment, type UIPackage } from "../api/client";
-import ConfirmDeleteDialog from "./ConfirmDeleteDialog";
 
 interface EnvironmentDetailProps {
   projectId: string;
@@ -23,20 +20,17 @@ interface EnvironmentDetailProps {
 const AUTH_STRATEGIES = ["none", "basic", "form_login", "sso_manual"];
 
 function emptyUiPackage(): UIPackage {
-  return { base_url: "", auth: null, env_vars: {}, upload_fixtures: [], instructions: null };
+  return { base_url: "", auth: null, env_vars: {}, upload_fixtures: [] };
 }
 
 export default function EnvironmentDetail({ projectId }: EnvironmentDetailProps) {
   const { envId } = useParams<{ envId: string }>();
-  const navigate = useNavigate();
   const [environment, setEnvironment] = useState<Environment | null>(null);
-  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const [baseUrl, setBaseUrl] = useState("");
   const [authStrategy, setAuthStrategy] = useState("none");
   const [secureRef, setSecureRef] = useState("");
   const [envVars, setEnvVars] = useState<[string, string][]>([]);
-  const [instructions, setInstructions] = useState("");
 
   useEffect(() => {
     if (!projectId || !envId) return;
@@ -47,7 +41,6 @@ export default function EnvironmentDetail({ projectId }: EnvironmentDetailProps)
       setAuthStrategy(ui.auth?.strategy ?? "none");
       setSecureRef(ui.auth?.secure_ref ?? "");
       setEnvVars(Object.entries(ui.env_vars ?? {}));
-      setInstructions(ui.instructions ?? "");
     });
   }, [projectId, envId]);
 
@@ -59,25 +52,13 @@ export default function EnvironmentDetail({ projectId }: EnvironmentDetailProps)
       base_url: baseUrl,
       auth: authStrategy === "none" ? null : { strategy: authStrategy, secure_ref: secureRef },
       env_vars,
-      instructions: instructions || null,
     });
     setEnvironment(updated);
   };
 
-  const handleDelete = async () => {
-    await apiClient.deleteEnvironment(projectId, envId);
-    setDeleteOpen(false);
-    navigate("..");
-  };
-
   return (
     <Box>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <Typography variant="h6">{environment.label}</Typography>
-        <IconButton aria-label="delete environment" onClick={() => setDeleteOpen(true)}>
-          <DeleteIcon />
-        </IconButton>
-      </Box>
+      <Typography variant="h6">{environment.label}</Typography>
       <Typography
         variant="body2"
         color="text.secondary"
@@ -148,16 +129,8 @@ export default function EnvironmentDetail({ projectId }: EnvironmentDetailProps)
             Add env var
           </Button>
         </Box>
-        <TextField
-          label="Instructions"
-          value={instructions}
-          onChange={(e) => setInstructions(e.target.value)}
-          multiline
-          minRows={3}
-          fullWidth
-        />
         <Button variant="contained" onClick={handleSavePackage} sx={{ alignSelf: "flex-start" }}>
-          Save UI Package
+          Save
         </Button>
       </Box>
 
@@ -167,14 +140,6 @@ export default function EnvironmentDetail({ projectId }: EnvironmentDetailProps)
         <Typography variant="subtitle1">API Package</Typography>
         <Typography variant="body2">API package configuration coming soon (F17).</Typography>
       </Box>
-
-      <ConfirmDeleteDialog
-        open={deleteOpen}
-        title="Delete environment"
-        message={`Delete "${environment.label}"? It will be archived, not removed from disk.`}
-        onConfirm={handleDelete}
-        onClose={() => setDeleteOpen(false)}
-      />
     </Box>
   );
 }

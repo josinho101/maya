@@ -6,6 +6,8 @@ interface ConfirmDeleteDialogProps {
   message: string;
   onConfirm: () => void;
   onClose: () => void;
+  confirmLabel?: string;
+  confirmColor?: "error" | "warning";
 }
 
 export default function ConfirmDeleteDialog({
@@ -14,6 +16,8 @@ export default function ConfirmDeleteDialog({
   message,
   onConfirm,
   onClose,
+  confirmLabel = "Delete",
+  confirmColor = "error",
 }: ConfirmDeleteDialogProps) {
   return (
     <Dialog open={open} onClose={onClose}>
@@ -23,8 +27,8 @@ export default function ConfirmDeleteDialog({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button color="error" onClick={onConfirm}>
-          Delete
+        <Button color={confirmColor} onClick={onConfirm}>
+          {confirmLabel}
         </Button>
       </DialogActions>
     </Dialog>

@@ -31,7 +31,6 @@ export interface UIPackage {
   auth: AuthConfig | null;
   env_vars: Record<string, string>;
   upload_fixtures: string[];
-  instructions: string | null;
 }
 
 export interface Environment {
@@ -62,7 +61,22 @@ export interface AddEnvironmentInput {
   is_destructive_safe?: boolean;
 }
 
+export interface UpdateEnvironmentInput {
+  label?: string;
+  schedule?: ScheduleConfig | null;
+  is_destructive_safe?: boolean;
+}
+
 export type UpdatePackageInput = Partial<UIPackage>;
+
+export interface EnvironmentImportManifest {
+  tag: string;
+  schedule: ScheduleConfig | null;
+  is_destructive_safe: boolean;
+  base_url: string;
+  auth: AuthConfig | null;
+  env_vars: Record<string, string>;
+}
 
 export class ApiError extends Error {
   status: number;
@@ -118,6 +132,12 @@ export const apiClient = {
 
   deleteProject: (id: string) => request<void>(`/api/v1/projects/${id}`, { method: "DELETE" }),
 
+  archiveProject: (id: string) =>
+    request<Project>(`/api/v1/projects/${id}/archive`, { method: "POST" }),
+
+  listEnvironments: (projectId: string) =>
+    request<Environment[]>(`/api/v1/projects/${projectId}/environments`),
+
   addEnvironment: (projectId: string, body: AddEnvironmentInput) =>
     request<Environment>(`/api/v1/projects/${projectId}/environments`, {
       method: "POST",
@@ -131,9 +151,46 @@ export const apiClient = {
   deleteEnvironment: (projectId: string, envId: string) =>
     request<void>(`/api/v1/projects/${projectId}/environments/${envId}`, { method: "DELETE" }),
 
+  archiveEnvironment: (projectId: string, envId: string) =>
+    request<Environment>(`/api/v1/projects/${projectId}/environments/${envId}/archive`, {
+      method: "POST",
+    }),
+
+  updateEnvironment: (projectId: string, envId: string, body: UpdateEnvironmentInput) =>
+    request<Environment>(`/api/v1/projects/${projectId}/environments/${envId}`, {
+      method: "PUT",
+      headers: JSON_HEADERS,
+      body: JSON.stringify(body),
+    }),
+
   updatePackage: (projectId: string, envId: string, testType: string, body: UpdatePackageInput) =>
     request<Environment>(
       `/api/v1/projects/${projectId}/environments/${envId}/packages/${testType}`,
       { method: "PUT", headers: JSON_HEADERS, body: JSON.stringify(body) },
     ),
+
+  downloadEnvironmentSampleJson: async (): Promise<Blob> => {
+    const response = await fetch(`${BASE_URL}/api/v1/projects/environments/sample-json`);
+    if (!response.ok) throw new ApiError(response.status);
+    return response.blob();
+  },
+
+  parseEnvironmentJson: async (file: File): Promise<EnvironmentImportManifest> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await fetch(`${BASE_URL}/api/v1/projects/environments/parse-json`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!response.ok) {
+      let detail: string | undefined;
+      try {
+        detail = (await response.json())?.detail;
+      } catch {
+        detail = undefined;
+      }
+      throw new ApiError(response.status, detail);
+    }
+    return response.json() as Promise<EnvironmentImportManifest>;
+  },
 };

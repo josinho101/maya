@@ -13,6 +13,7 @@ vi.mock("../api/client", () => ({
     createProject: vi.fn(),
     updateProject: vi.fn(),
     deleteProject: vi.fn(),
+    archiveProject: vi.fn(),
   },
 }));
 
@@ -73,14 +74,29 @@ describe("ProjectsPage", () => {
     expect(screen.queryByText("project detail")).not.toBeInTheDocument();
   });
 
-  it("opens the delete confirmation without navigating when the delete icon is clicked", async () => {
+  it("opens the delete confirmation with permanent-delete wording without navigating", async () => {
     renderPage();
     await screen.findByText("Acme");
 
     await userEvent.click(screen.getByLabelText("delete Acme"));
 
     expect(screen.getByText("Delete project")).toBeInTheDocument();
+    expect(screen.getByText(/Permanently delete "Acme" and all its data\?/)).toBeInTheDocument();
     expect(screen.queryByText("project detail")).not.toBeInTheDocument();
+  });
+
+  it("archives a project via the archive icon without removing it from disk", async () => {
+    vi.mocked(apiClient.archiveProject).mockResolvedValue({ ...PROJECTS[0], archived: true });
+    renderPage();
+    await screen.findByText("Acme");
+
+    await userEvent.click(screen.getByLabelText("archive Acme"));
+    expect(screen.getByText("Archive project")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Archive" }));
+
+    expect(apiClient.archiveProject).toHaveBeenCalledWith("acme");
+    expect(apiClient.deleteProject).not.toHaveBeenCalled();
   });
 
   it("navigates into the project when the left-side open icon is clicked", async () => {

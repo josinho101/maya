@@ -11,6 +11,7 @@ vi.mock("../api/client", () => ({
     getHealth: vi.fn(),
     listProjects: vi.fn(),
     getProject: vi.fn(),
+    listEnvironments: vi.fn(),
   },
 }));
 
@@ -28,6 +29,7 @@ describe("AppShell", () => {
   beforeEach(() => {
     vi.mocked(apiClient.getHealth).mockResolvedValue({ status: "ok" });
     vi.mocked(apiClient.listProjects).mockResolvedValue([]);
+    vi.mocked(apiClient.listEnvironments).mockResolvedValue([]);
   });
 
   it("renders the dashboard with no project-scoped navigation at /projects", async () => {

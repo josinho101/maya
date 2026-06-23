@@ -17,6 +17,7 @@ dependencies = [
     "playwright>=1.43,<2.0",
     "prance>=23.6,<24.0",
     "openapi-core>=0.19,<1.0",
+    "python-multipart>=0.0.9,<1.0",
 ]
 
 [project.optional-dependencies]

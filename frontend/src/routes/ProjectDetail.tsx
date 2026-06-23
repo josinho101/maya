@@ -62,9 +62,6 @@ export default function ProjectDetail() {
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <Toolbar />
         <AppBreadcrumbs segments={breadcrumbSegments} />
-        <Typography variant="h5" sx={{ mb: 2 }}>
-          {project.name}
-        </Typography>
         <Routes>
           <Route index element={<Navigate to="environments" replace />} />
           <Route path="environments/*" element={<EnvironmentsPanel project={project} />} />
