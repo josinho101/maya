@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>MAYA Demo App</title>
+</head>
+<body>
+  <form id="login-form">
+    <label for="username">Username</label>
+    <input id="username" name="username" type="text" />
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" />
+    <button type="submit" data-testid="login-button">Log in</button>
+  </form>
+
+  <button id="counter" type="button" data-testid="counter-button">Count: 0</button>
+
+  <input id="upload" type="file" data-testid="upload-input" />
+
+  <script>
+    document.getElementById("login-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+    });
+
+    const counterButton = document.getElementById("counter");
+    let count = 0;
+    counterButton.addEventListener("click", () => {
+      count += 1;
+      counterButton.textContent = `Count: ${count}`;
+    });
+  </script>
+</body>
+</html>

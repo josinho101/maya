@@ -12,10 +12,10 @@ See [`stories.md`](stories.md) for the legend/conventions and [`plan.md`](plan.m
 
 | Task ID | Task | Story | Feature | Depends On | Verification | Status |
 |---|---|---|---|---|---|---|
-| F1-010 | Define `Project` pydantic model matching `project.json` (id, test_types, default_environment, environments, exploration/healing/notifications/concurrency config) | F1.S1 | F1 | F0-020 | Unit test: round-trip a sample dict through the model, assert no data loss | Not Started |
-| F1-020 | Define `Environment`/`Package` models matching `environment.json` (ui/api package sub-shapes, schedule, is_destructive_safe) | F1.S1 | F1 | F1-010 | Unit test: parse the `environment.json` example from plan.md §3.4 verbatim, assert all fields populate | Not Started |
-| F1-030 | Define shared `TestCase` model (id, protocol, status, created_by, source_scenario_ref, tags, healing_history_ref, last_run_status, last_execution_time_ms) plus `UITestCase` subtype (view_identity, locator_confidence, steps) | F1.S1 | F1 | F1-010 | Unit test: parse a hand-written UI test case JSON, assert discriminated union resolves to `UITestCase` | Not Started |
-| F1-040 | Define `ViewSnapshotRecord`, `RunSummary`, `HealingEventLogEntry` models per plan.md §3.4 | F1.S1 | F1 | F1-010 | Unit test: round-trip one sample of each model | Not Started |
+| F1-010 | Define `Project` pydantic model matching `project.json` (id, test_types, default_environment, environments, exploration/healing/notifications/concurrency config) | F1.S1 | F1 | F0-020 | Unit test: round-trip a sample dict through the model, assert no data loss | Done |
+| F1-020 | Define `Environment`/`Package` models matching `environment.json` (ui/api package sub-shapes, schedule, is_destructive_safe) | F1.S1 | F1 | F1-010 | Unit test: parse the `environment.json` example from plan.md §3.4 verbatim, assert all fields populate | Done |
+| F1-030 | Define shared `TestCase` model (id, protocol, status, created_by, source_scenario_ref, tags, healing_history_ref, last_run_status, last_execution_time_ms) plus `UITestCase` subtype (view_identity, locator_confidence, steps) | F1.S1 | F1 | F1-010 | Unit test: parse a hand-written UI test case JSON, assert discriminated union resolves to `UITestCase` | Done |
+| F1-040 | Define `ViewSnapshotRecord`, `RunSummary`, `HealingEventLogEntry` models per plan.md §3.4 | F1.S1 | F1 | F1-010 | Unit test: round-trip one sample of each model | Done |
 
 **F1-010 — How to build it**: `src/maya/storage/models.py`, a pydantic `BaseModel` subclass `Project` with fields typed exactly as the `project.json` sketch in plan.md §3.4 (nested sub-models for `exploration`, `healing`, `notifications`, `concurrency` config blocks — each can start as a loose `dict[str, Any]` and be tightened later as concrete fields are needed). Use pydantic v2 `model_validate`/`model_dump` for round-tripping. (see plan.md §3.4)
 
@@ -29,9 +29,9 @@ See [`stories.md`](stories.md) for the legend/conventions and [`plan.md`](plan.m
 
 | Task ID | Task | Story | Feature | Depends On | Verification | Status |
 |---|---|---|---|---|---|---|
-| F1-050 | Implement `TestCaseStore` CRUD across `pending/`/`approved/`/`archived/` directories using F1-030 models | F1.S2 | F1 | F1-030 | Unit test: create in pending, list, read, move to approved, move to archived; assert directory contents at each step | Not Started |
-| F1-060 | Implement file-locking discipline (atomic write-then-rename or advisory lock file) for concurrent writes | F1.S2 | F1 | F1-050 | Unit test: simulate two concurrent writers to the same test case file, assert no corruption (valid JSON survives) | Not Started |
-| F1-070 | Write the full unit test suite for F1-050/F1-060 combined | F1.S2 | F1 | F1-060 | Unit test: full pending→approved→archived round trip plus the concurrency simulation, all green | Not Started |
+| F1-050 | Implement `TestCaseStore` CRUD across `pending/`/`approved/`/`archived/` directories using F1-030 models | F1.S2 | F1 | F1-030 | Unit test: create in pending, list, read, move to approved, move to archived; assert directory contents at each step | Done |
+| F1-060 | Implement file-locking discipline (atomic write-then-rename or advisory lock file) for concurrent writes | F1.S2 | F1 | F1-050 | Unit test: simulate two concurrent writers to the same test case file, assert no corruption (valid JSON survives) | Done |
+| F1-070 | Write the full unit test suite for F1-050/F1-060 combined | F1.S2 | F1 | F1-060 | Unit test: full pending→approved→archived round trip plus the concurrency simulation, all green | Done |
 
 **F1-050 — How to build it**: `src/maya/storage/test_case_store.py`, class `TestCaseStore(root_dir)` with methods `create(test_case) -> id`, `get(id) -> TestCase`, `list(status) -> list[TestCase]`, `move(id, from_status, to_status)`. Internally just file I/O over `<root>/test_cases/{pending,approved,archived}/tc_<uuid>.json`, serializing via the F1-030 models' `model_dump_json()`. This is the single chokepoint every agent/engine writes test cases through — no other component should touch these directories directly. (see plan.md §2.3 Test Case Store, §3.3)
 
@@ -43,8 +43,8 @@ See [`stories.md`](stories.md) for the legend/conventions and [`plan.md`](plan.m
 
 | Task ID | Task | Story | Feature | Depends On | Verification | Status |
 |---|---|---|---|---|---|---|
-| F1-080 | Implement `ProjectDirectoryScaffolder` creating the full `/framework-data/projects/<id>/...` tree per plan.md §3.3 | F1.S3 | F1 | F1-010, F1-020 | Unit test: scaffold a project with 2 environments, assert every expected subdirectory exists | Not Started |
-| F1-090 | Unit test scaffolding output is re-parseable via F1-010/F1-020 models | F1.S3 | F1 | F1-080 | Unit test: read back the written `project.json`/`environment.json`, assert they parse via the pydantic models | Not Started |
+| F1-080 | Implement `ProjectDirectoryScaffolder` creating the full `/framework-data/projects/<id>/...` tree per plan.md §3.3 | F1.S3 | F1 | F1-010, F1-020 | Unit test: scaffold a project with 2 environments, assert every expected subdirectory exists | Done |
+| F1-090 | Unit test scaffolding output is re-parseable via F1-010/F1-020 models | F1.S3 | F1 | F1-080 | Unit test: read back the written `project.json`/`environment.json`, assert they parse via the pydantic models | Done |
 
 **F1-080 — How to build it**: `src/maya/storage/scaffolder.py`, function `scaffold_project(root_dir, project: Project)` that creates `test_cases/{pending,approved,archived}/`, `scenario_sessions/`, `uploads/`, and for each environment in `project.environments`: `environments/<env>/{view_snapshots,specs,runs,healing_logs}/`. Write `project.json` and each `environment.json` using the F1-010/F1-020 models' serialization. Use `pathlib.Path.mkdir(parents=True, exist_ok=True)` throughout. (see plan.md §3.3 file layout diagram)
 

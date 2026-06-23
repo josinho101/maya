@@ -8,7 +8,7 @@ import sys
 
 import httpx
 
-REQUIRED_MODELS = {"qwen2.5-vl:7b", "qwen2.5-vl:3b", "qwen2.5:7b-instruct"}
+REQUIRED_MODELS = {"qwen2.5vl:7b", "qwen2.5vl:3b", "qwen2.5:7b-instruct"}
 OLLAMA_HOST = "http://localhost:11434"
 
 

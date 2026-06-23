@@ -105,7 +105,7 @@ Routine replay runs (no AI needed) execute fully in parallel across projects and
 - Python 3.11+
 - Node 18.18+ (or 20+) and npm
 - [`uv`](https://docs.astral.sh/uv/) — `curl -LsSf https://astral.sh/uv/install.sh | sh`
-- [Ollama](https://ollama.com) installed separately, with `qwen2.5-vl:7b`, `qwen2.5-vl:3b`, and `qwen2.5:7b-instruct` pulled (see `scripts/check_ollama.py`)
+- [Ollama](https://ollama.com) installed separately, with `qwen2.5vl:7b`, `qwen2.5vl:3b`, and `qwen2.5:7b-instruct` pulled (see `scripts/check_ollama.py`)
 
 ### Backend (FastAPI)
 
