@@ -6,13 +6,13 @@ from __future__ import annotations
 
 import json
 import logging
-import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from maya.adapters.browser_driver import BrowserDriver, Locator
+from maya.adapters.browser_driver import BrowserDriver
 from maya.adapters.llm_client import LLMClient, LLMResponse
+from maya.agents.agent_actions import execute_action, login as _login_action, perceive
 from maya.perception.snapshot_engine import ViewSnapshotEngine
 from maya.storage.models import AuthConfig, UIStep, UITestCase
 from maya.storage.test_case_store import TestCaseStore
@@ -102,9 +102,6 @@ EXPLORATION_TOOLS: list[dict[str, Any]] = [
     },
 ]
 
-_JSON_OBJECT_RE = re.compile(r"\{.*\}", re.DOTALL)
-
-
 @dataclass
 class ParsedAction:
     name: str
@@ -130,12 +127,20 @@ def _parse_action(response: LLMResponse) -> ParsedAction | None:
             return None
         return ParsedAction(name=name, arguments=arguments)
 
-    match = _JSON_OBJECT_RE.search(response.text or "")
-    if not match:
+    # Decode only the first JSON object in the text (via `raw_decode`, not a
+    # greedy regex to the last `}`) — goal-directed prompting occasionally
+    # makes the model plan ahead and emit several `{...}` objects back to
+    # back; we only want the next single action, and a greedy match across
+    # all of them would otherwise produce invalid JSON.
+    text = response.text or ""
+    start = text.find("{")
+    if start == -1:
         return None
     try:
-        payload = json.loads(match.group(0))
+        payload, _ = json.JSONDecoder().raw_decode(text, start)
     except json.JSONDecodeError:
+        return None
+    if not isinstance(payload, dict):
         return None
     name = payload.get("name")
     arguments = payload.get("arguments") or {}
@@ -181,26 +186,18 @@ class ExplorationAgent:
         password: str,
         session_path: Path,
     ) -> None:
-        self._driver.navigate(base_url)
-        if auth.username_field is not None:
-            self._driver.type(auth.username_field, username)
-        if auth.password_field is not None:
-            self._driver.type(auth.password_field, password)
-        if auth.submit_button is not None:
-            self._driver.click(auth.submit_button)
-        self._driver.save_storage_state(session_path)
+        _login_action(self._driver, base_url, auth, username, password, session_path)
 
     def step(self) -> bool:
         """Perceive, prompt the LLM for one tool call, and execute it. Returns
         False if no valid action could be parsed or executed (caller should
         stop the run)."""
-        ax_tree = self._driver.get_ax_tree()
-        screenshot = self._driver.screenshot()
-
-        record = self._snapshot_engine.capture(self._driver, self._project_id, self._env_id)
-        self._last_view_identity = record.view_identity
+        ax_tree, screenshot, view_identity = perceive(
+            self._driver, self._snapshot_engine, self._project_id, self._env_id
+        )
+        self._last_view_identity = view_identity
         if self._flow_view_identity is None:
-            self._flow_view_identity = record.view_identity
+            self._flow_view_identity = view_identity
 
         prompt = _render_prompt(ax_tree)
         # `qwen2.5vl` (the only model configured for `ui_explore_heal`) rejects any
@@ -253,37 +250,7 @@ class ExplorationAgent:
         return self._created_test_case_ids
 
     def _execute(self, action: ParsedAction) -> None:
-        args = action.arguments
-        if action.name == "click":
-            locator = Locator(strategy=args["strategy"], value=args["value"])
-            self._driver.click(locator)
-            self._steps.append(UIStep(action="click", target=locator))
-        elif action.name == "type":
-            locator = Locator(strategy=args["strategy"], value=args["value"])
-            text = args["text"]
-            self._driver.type(locator, text)
-            self._steps.append(UIStep(action="type", target=locator, input=text))
-        elif action.name == "navigate":
-            url = args["url"]
-            self._driver.navigate(url)
-            self._steps.append(UIStep(action="navigate", input=url))
-        elif action.name == "upload_file":
-            locator = Locator(strategy=args["strategy"], value=args["value"])
-            fixture_ref = args["fixture_ref"]
-            if fixture_ref in self._upload_fixtures and Path(fixture_ref).is_file():
-                self._driver.upload_file(locator, Path(fixture_ref))
-            else:
-                logger.warning(
-                    "exploration agent recorded an upload_file step with unresolved "
-                    "fixture_ref=%r; not executing the upload (fixture-library "
-                    "resolution is out of scope for F5)",
-                    fixture_ref,
-                )
-            self._steps.append(
-                UIStep(action="upload_file", target=locator, fixture_ref=fixture_ref)
-            )
-        else:
-            raise ValueError(f"unknown action {action.name!r}")
+        self._steps.append(execute_action(self._driver, action, self._upload_fixtures))
 
     def _flush(self, summary: str | None = None) -> None:
         if not self._steps:

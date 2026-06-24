@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from maya.api.routers import health, healing, projects, runs, test_cases
+from maya.api.routers import health, healing, projects, runs, scenarios, test_cases
 from maya.api.routers.healing import HealingNotFoundError
 from maya.api.routers.runs import RunNotFoundError
 from maya.logging_setup import configure_logging
@@ -23,6 +23,7 @@ from maya.managers.project_manager import (
 )
 from maya.managers.slugify import EmptySlugError
 from maya.startup_checks import check_secure_config_not_tracked
+from maya.storage.scenario_session_store import ScenarioSessionNotFoundError
 from maya.storage.test_case_store import TestCaseNotFoundError, TestCaseStatusConflictError
 
 FRAMEWORK_DATA_DIR = Path("framework-data")
@@ -60,6 +61,7 @@ app.state.project_manager = ProjectManager(FRAMEWORK_DATA_DIR)
 @app.exception_handler(EnvironmentNotFoundError)
 @app.exception_handler(RunNotFoundError)
 @app.exception_handler(HealingNotFoundError)
+@app.exception_handler(ScenarioSessionNotFoundError)
 def _handle_not_found(request: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(status_code=404, content={"detail": str(exc)})
 
@@ -90,3 +92,4 @@ app.include_router(projects.router)
 app.include_router(test_cases.router)
 app.include_router(runs.router)
 app.include_router(healing.router)
+app.include_router(scenarios.router)

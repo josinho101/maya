@@ -145,6 +145,21 @@ export interface HealingCandidate {
   signal_breakdown: Record<string, number>;
 }
 
+export type ScenarioSessionStatus = "pending_interpretation" | "in_progress" | "completed" | "stuck";
+
+export interface ScenarioSession {
+  id: string;
+  project_id: string;
+  environment_id: string;
+  text: string;
+  status: ScenarioSessionStatus;
+  submitted_at: string;
+  completed_at: string | null;
+  resulting_test_case_id: string | null;
+  blocked_at: string | null;
+  stuck_reason: string | null;
+}
+
 export interface HealingEventLogEntry {
   heal_id: string;
   run_id: string;
@@ -293,6 +308,16 @@ export const apiClient = {
       headers: JSON_HEADERS,
       body: JSON.stringify({ action }),
     }),
+
+  submitScenario: (projectId: string, environmentId: string, text: string) =>
+    request<ScenarioSession>(`/api/v1/projects/${projectId}/scenarios`, {
+      method: "POST",
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ text, environment_id: environmentId }),
+    }),
+
+  getScenarioSession: (projectId: string, sessionId: string) =>
+    request<ScenarioSession>(`/api/v1/projects/${projectId}/scenarios/${sessionId}`),
 
   getScreenshotUrl: (runId: string, filename: string) =>
     `${BASE_URL}/api/v1/runs/${runId}/screenshots/${filename}`,

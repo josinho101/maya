@@ -9,6 +9,7 @@ import EnvironmentsPanel from "./EnvironmentsPanel";
 import TestCasesPage from "./TestCasesPage";
 import RunsPage from "./RunsPage";
 import HealingPage from "./HealingPage";
+import ScenarioPage from "./ScenarioPage";
 import NotificationsPage from "./NotificationsPage";
 
 export default function ProjectDetail() {
@@ -48,7 +49,8 @@ export default function ProjectDetail() {
   const envId = location.pathname.match(/\/environments\/([^/]+)/)?.[1];
   const testCaseId = location.pathname.match(/\/test-cases\/([^/]+)/)?.[1];
   const healingTestCaseId = location.pathname.match(/\/healing\/([^/]+)/)?.[1];
-  const detailId = envId ?? testCaseId ?? healingTestCaseId;
+  const scenarioSessionId = location.pathname.match(/\/scenarios\/([^/]+)/)?.[1];
+  const detailId = envId ?? testCaseId ?? healingTestCaseId ?? scenarioSessionId;
 
   const breadcrumbSegments: BreadcrumbSegment[] = [
     { label: "Projects", to: "/projects" },
@@ -71,6 +73,7 @@ export default function ProjectDetail() {
           <Route path="test-cases/*" element={<TestCasesPage project={project} />} />
           <Route path="runs/*" element={<RunsPage project={project} />} />
           <Route path="healing/*" element={<HealingPage project={project} />} />
+          <Route path="scenarios/*" element={<ScenarioPage project={project} />} />
           <Route path="notifications" element={<NotificationsPage />} />
         </Routes>
       </Box>

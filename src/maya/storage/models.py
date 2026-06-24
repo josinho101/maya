@@ -221,6 +221,26 @@ class HealingCandidate(BaseModel):
     signal_breakdown: dict[str, float] = Field(default_factory=dict)
 
 
+class ScenarioSession(BaseModel):
+    """Persisted record of a free-text scenario submission (F10), per
+    plan.md §5.b — written immediately on submission, then updated in place
+    as the `ScenarioInterpreter` progresses through pending_interpretation ->
+    in_progress -> completed/stuck."""
+
+    id: str
+    project_id: str
+    environment_id: str
+    text: str
+    status: Literal["pending_interpretation", "in_progress", "completed", "stuck"] = (
+        "pending_interpretation"
+    )
+    submitted_at: datetime
+    completed_at: datetime | None = None
+    resulting_test_case_id: str | None = None
+    blocked_at: str | None = None
+    stuck_reason: str | None = None
+
+
 class HealingEventLogEntry(BaseModel):
     heal_id: str
     run_id: str

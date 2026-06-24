@@ -10,6 +10,7 @@ export function buildProjectNavItems(projectId: string): NavItem[] {
     { label: "Test Cases", path: `${base}/test-cases` },
     { label: "Runs", path: `${base}/runs` },
     { label: "Healing", path: `${base}/healing` },
+    { label: "Scenarios", path: `${base}/scenarios` },
     { label: "Notifications", path: `${base}/notifications` },
   ];
 }
