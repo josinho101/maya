@@ -22,6 +22,7 @@ def test_playwright_adapter_full_chain(demo_app_url):
     driver = _make_driver()
     try:
         driver.navigate(demo_app_url)
+        assert driver.current_url() == demo_app_url
 
         username_locator = Locator(strategy="css", value="#username")
         driver.type(username_locator, "alice")

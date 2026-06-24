@@ -8,6 +8,9 @@ from maya.adapters.browser_driver import BrowserDriver, Locator
 class StubBrowserDriver:
     def navigate(self, url: str) -> None: ...
 
+    def current_url(self) -> str:
+        return ""
+
     def click(self, locator: Locator) -> None: ...
 
     def type(self, locator: Locator, text: str) -> None: ...

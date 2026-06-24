@@ -54,6 +54,9 @@ class PlaywrightAdapter(BrowserDriver):
     def navigate(self, url: str) -> None:
         self._page.goto(url)
 
+    def current_url(self) -> str:
+        return self._page.url
+
     def click(self, locator: Locator) -> None:
         resolve_locator(self._page, locator).click()
 

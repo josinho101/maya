@@ -17,6 +17,12 @@
 
   <input id="upload" type="file" data-testid="upload-input" />
 
+  <button id="reveal-panel" type="button" data-testid="reveal-panel-button">Settings</button>
+
+  <section id="settings-panel" role="dialog" aria-label="Settings" hidden>
+    <h2>Settings</h2>
+  </section>
+
   <script>
     document.getElementById("login-form").addEventListener("submit", (event) => {
       event.preventDefault();
@@ -27,6 +33,10 @@
     counterButton.addEventListener("click", () => {
       count += 1;
       counterButton.textContent = `Count: ${count}`;
+    });
+
+    document.getElementById("reveal-panel").addEventListener("click", () => {
+      document.getElementById("settings-panel").hidden = false;
     });
   </script>
 </body>
