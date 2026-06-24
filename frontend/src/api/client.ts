@@ -118,6 +118,26 @@ export interface APITestCase extends TestCaseCommon {
 
 export type TestCase = UITestCase | APITestCase;
 
+export interface RunResultEntry {
+  test_case_id: string;
+  status: string;
+  healed_pass: boolean;
+  execution_time_ms: number;
+  healing_event_refs: string[];
+  screenshot_refs: string[];
+  mapping_refs: string[];
+}
+
+export interface RunSummary {
+  run_id: string;
+  environment_id: string;
+  trigger: Record<string, unknown>;
+  decision: Record<string, unknown>;
+  total_job_time_ms: number;
+  results: RunResultEntry[];
+  summary: Record<string, number>;
+}
+
 export class ApiError extends Error {
   status: number;
   detail?: string;
@@ -233,6 +253,14 @@ export const apiClient = {
       headers: JSON_HEADERS,
       body: JSON.stringify({ steps }),
     }),
+
+  triggerRun: (projectId: string, environmentId: string) =>
+    request<RunSummary>(
+      `/api/v1/projects/${projectId}/runs?${new URLSearchParams({ environment: environmentId }).toString()}`,
+      { method: "POST" },
+    ),
+
+  getRun: (runId: string) => request<RunSummary>(`/api/v1/runs/${runId}`),
 
   downloadEnvironmentSampleJson: async (): Promise<Blob> => {
     const response = await fetch(`${BASE_URL}/api/v1/projects/environments/sample-json`);

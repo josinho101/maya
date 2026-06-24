@@ -6,7 +6,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from maya.api.routers import health, projects, test_cases
+from maya.api.routers import health, projects, runs, test_cases
+from maya.api.routers.runs import RunNotFoundError
 from maya.logging_setup import configure_logging
 from maya.managers.project_manager import (
     ArchivedError,
@@ -56,6 +57,7 @@ app.state.project_manager = ProjectManager(FRAMEWORK_DATA_DIR)
 
 @app.exception_handler(ProjectNotFoundError)
 @app.exception_handler(EnvironmentNotFoundError)
+@app.exception_handler(RunNotFoundError)
 def _handle_not_found(request: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(status_code=404, content={"detail": str(exc)})
 
@@ -84,3 +86,4 @@ def _handle_invalid(request: Request, exc: Exception) -> JSONResponse:
 app.include_router(health.router)
 app.include_router(projects.router)
 app.include_router(test_cases.router)
+app.include_router(runs.router)

@@ -68,7 +68,7 @@ export default function ProjectDetail() {
           <Route index element={<Navigate to="environments" replace />} />
           <Route path="environments/*" element={<EnvironmentsPanel project={project} />} />
           <Route path="test-cases/*" element={<TestCasesPage project={project} />} />
-          <Route path="runs" element={<RunsPage />} />
+          <Route path="runs/*" element={<RunsPage project={project} />} />
           <Route path="healing" element={<HealingPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
         </Routes>

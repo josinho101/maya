@@ -12,6 +12,10 @@ from playwright.sync_api import Browser, BrowserContext, Page, sync_playwright
 
 from maya.adapters.browser_driver import BrowserDriver, Locator
 
+# Playwright's default actionability timeout is 30s; a missing locator (e.g. F7's
+# intentional-break replay path) should fail clearly within seconds, not half a minute.
+_DEFAULT_ACTION_TIMEOUT_MS = 5000
+
 _STRATEGY_RESOLVERS: dict[str, Callable[[Page, str], Any]] = {
     "test_id": lambda page, value: page.get_by_test_id(value),
     "role": lambda page, value: page.get_by_role(value),
@@ -58,10 +62,10 @@ class PlaywrightAdapter(BrowserDriver):
         return self._page.url
 
     def click(self, locator: Locator) -> None:
-        resolve_locator(self._page, locator).click()
+        resolve_locator(self._page, locator).click(timeout=_DEFAULT_ACTION_TIMEOUT_MS)
 
     def type(self, locator: Locator, text: str) -> None:
-        resolve_locator(self._page, locator).fill(text)
+        resolve_locator(self._page, locator).fill(text, timeout=_DEFAULT_ACTION_TIMEOUT_MS)
 
     def get_ax_tree(self) -> str:
         return self._page.aria_snapshot()
@@ -73,7 +77,9 @@ class PlaywrightAdapter(BrowserDriver):
         return self._page.content()
 
     def upload_file(self, locator: Locator, file_path: Path) -> None:
-        resolve_locator(self._page, locator).set_input_files(str(file_path))
+        resolve_locator(self._page, locator).set_input_files(
+            str(file_path), timeout=_DEFAULT_ACTION_TIMEOUT_MS
+        )
 
     def save_storage_state(self, path: Path) -> None:
         self._context.storage_state(path=str(path))
