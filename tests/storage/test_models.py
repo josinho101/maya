@@ -206,6 +206,7 @@ def test_healing_event_log_entry_round_trip_ui_locator():
         "auto_applied": True,
         "escalated_to_vision": False,
         "escalated_to_llm": False,
+        "resolution": None,
     }
     entry = HealingEventLogEntry.model_validate(data)
     assert entry.model_dump(mode="json") == data
@@ -225,6 +226,7 @@ def test_healing_event_log_entry_round_trip_api_mapping():
         "auto_applied": False,
         "escalated_to_vision": False,
         "escalated_to_llm": True,
+        "resolution": None,
     }
     entry = HealingEventLogEntry.model_validate(data)
     assert entry.model_dump(mode="json") == data

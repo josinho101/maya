@@ -13,12 +13,16 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from maya.adapters.ollama_adapter import OllamaAdapter
 from maya.adapters.playwright_adapter import PlaywrightAdapter
+from maya.config import GlobalConfig, load_global_config
 from maya.engines.execution_engine import ExecutionEngine
+from maya.engines.healing_engine import HealingEngine
 from maya.managers.project_manager import ProjectManager
 from maya.perception.snapshot_engine import ViewSnapshotEngine
 from maya.runners.exploration_runner import run_exploration
 from maya.storage.atomic import atomic_write_json
+from maya.storage.healing_log_store import HealingLogStore
 from maya.storage.models import RunResultEntry, RunSummary, Severity, UITestCase
 from maya.storage.test_case_store import TestCaseStore
 
@@ -51,6 +55,27 @@ class RunOrchestrator:
         decisions: dict[str, Any] = {}
         results: list[RunResultEntry] = []
 
+        # Tolerate a missing global_config.json here (unlike exploration_runner.py,
+        # which needs a real model selection to function at all): most runs never hit
+        # a healable failure, so the vision tier — the only thing that actually needs
+        # this config — should not become a hard precondition for every run.
+        global_config_path = self._root_dir / "global_config.json"
+        global_config = load_global_config(global_config_path) if global_config_path.exists() else GlobalConfig()
+        env_dir = project_dir / "environments" / environment_id
+        healing_config = self._project_manager.get_project(project_id).healing
+        healing_engine = HealingEngine(
+            llm=OllamaAdapter(global_config),
+            snapshot_engine=snapshot_engine,
+            test_case_store=test_case_store,
+            healing_log_store=HealingLogStore(env_dir),
+            project_id=project_id,
+            env_id=environment_id,
+            run_id=run_id,
+            screenshots_dir=screenshots_dir,
+            auto_apply_threshold=healing_config.auto_apply_threshold,
+            vision_fallback_after_attempts=healing_config.vision_fallback_after_attempts,
+        )
+
         for view_identity, view_test_cases in by_view.items():
             driver = PlaywrightAdapter()
             try:
@@ -77,7 +102,7 @@ class RunOrchestrator:
                     if severity == Severity.STRUCTURAL_MINOR:
                         decisions[view_identity]["healing_ready"] = True
 
-                    engine = ExecutionEngine(driver, screenshots_dir)
+                    engine = ExecutionEngine(driver, screenshots_dir, healing_engine=healing_engine)
                     for tc in view_test_cases:
                         driver.navigate(base_url)
                         result = engine.run_test_case(tc)
@@ -85,7 +110,9 @@ class RunOrchestrator:
                             RunResultEntry(
                                 test_case_id=result.test_case_id,
                                 status=result.status,
+                                healed_pass=result.healed_pass,
                                 execution_time_ms=result.execution_time_ms,
+                                healing_event_refs=result.healing_event_refs,
                                 screenshot_refs=result.screenshot_refs,
                             )
                         )

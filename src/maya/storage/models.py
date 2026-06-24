@@ -233,3 +233,4 @@ class HealingEventLogEntry(BaseModel):
     auto_applied: bool = False
     escalated_to_vision: bool = False
     escalated_to_llm: bool = False
+    resolution: Literal["accepted", "rejected"] | None = None

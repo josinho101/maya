@@ -10,6 +10,7 @@ import pytest
 
 DEMO_APP_DIR = Path(__file__).parent / "fixtures" / "demo_app"
 DEMO_APP_MUTATED_DIR = Path(__file__).parent / "fixtures" / "demo_app_mutated"
+DEMO_APP_DRASTIC_DIR = Path(__file__).parent / "fixtures" / "demo_app_drastic"
 OLLAMA_HOST = "http://localhost:11434"
 
 
@@ -39,6 +40,14 @@ def demo_app_mutated_url() -> str:
     `counter-button`'s data-testid renamed to `counter-button-v2`, simulating the
     "key element renamed" structural-major change F8's diff gate must detect."""
     yield from _serve_dir(DEMO_APP_MUTATED_DIR)
+
+
+@pytest.fixture(scope="session")
+def demo_app_drastic_url() -> str:
+    """Serves tests/fixtures/demo_app_drastic — same page as demo_app_url but with
+    the counter button removed entirely (not renamed), simulating a change with no
+    structural similarity for F9's self-healing engine to match against."""
+    yield from _serve_dir(DEMO_APP_DRASTIC_DIR)
 
 
 def _list_ollama_models() -> list[str] | None:

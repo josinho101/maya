@@ -38,7 +38,7 @@ class PatchTestCaseRequest(BaseModel):
 def list_test_cases(
     project_id: str,
     request: Request,
-    status: Literal["pending", "approved", "archived"] = "pending",
+    status: Literal["pending", "approved", "needs_review", "archived"] = "pending",
     protocol: Literal["ui", "api"] | None = None,
 ) -> list[UITestCase | APITestCase]:
     store = get_test_case_store(project_id, request)

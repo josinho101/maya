@@ -47,7 +47,8 @@ export default function ProjectDetail() {
   const currentSection = navItems.find((item) => location.pathname.startsWith(item.path));
   const envId = location.pathname.match(/\/environments\/([^/]+)/)?.[1];
   const testCaseId = location.pathname.match(/\/test-cases\/([^/]+)/)?.[1];
-  const detailId = envId ?? testCaseId;
+  const healingTestCaseId = location.pathname.match(/\/healing\/([^/]+)/)?.[1];
+  const detailId = envId ?? testCaseId ?? healingTestCaseId;
 
   const breadcrumbSegments: BreadcrumbSegment[] = [
     { label: "Projects", to: "/projects" },
@@ -69,7 +70,7 @@ export default function ProjectDetail() {
           <Route path="environments/*" element={<EnvironmentsPanel project={project} />} />
           <Route path="test-cases/*" element={<TestCasesPage project={project} />} />
           <Route path="runs/*" element={<RunsPage project={project} />} />
-          <Route path="healing" element={<HealingPage />} />
+          <Route path="healing/*" element={<HealingPage project={project} />} />
           <Route path="notifications" element={<NotificationsPage />} />
         </Routes>
       </Box>

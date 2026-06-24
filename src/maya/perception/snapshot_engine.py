@@ -71,13 +71,25 @@ class ViewSnapshotEngine:
         """Most recently persisted snapshot for `view_identity`, or `None` if none
         exists yet (e.g. no exploration/run has captured this view before) — F8-040
         treats that absence as `Severity.NONE` (nothing to diff against)."""
-        view_dir = self._env_view_snapshots_dir(project_id, env_id) / slugify(view_identity)
-        if not view_dir.is_dir():
-            return None
-        json_files = sorted(view_dir.glob("*.json"))
+        json_files = self._snapshot_files(project_id, env_id, view_identity)
         if not json_files:
             return None
         return ViewSnapshotRecord.model_validate_json(json_files[-1].read_text())
+
+    def load_recent(
+        self, project_id: str, env_id: str, view_identity: str, n: int
+    ) -> list[ViewSnapshotRecord]:
+        """Up to the `n` most recently persisted snapshots for `view_identity`, oldest
+        first — F9-060's element-stability signal checks how many of these still
+        contain a given candidate element."""
+        json_files = self._snapshot_files(project_id, env_id, view_identity)
+        return [ViewSnapshotRecord.model_validate_json(p.read_text()) for p in json_files[-n:]]
+
+    def _snapshot_files(self, project_id: str, env_id: str, view_identity: str) -> list[Path]:
+        view_dir = self._env_view_snapshots_dir(project_id, env_id) / slugify(view_identity)
+        if not view_dir.is_dir():
+            return []
+        return sorted(view_dir.glob("*.json"))
 
     def diff(self, current: ViewSnapshotRecord, previous: ViewSnapshotRecord) -> Severity:
         """F8-010: classify the change between two snapshots of (logically) the same

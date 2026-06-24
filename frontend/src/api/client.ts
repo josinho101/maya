@@ -78,7 +78,7 @@ export interface EnvironmentImportManifest {
   env_vars: Record<string, string>;
 }
 
-export type TestCaseStatus = "pending" | "approved" | "archived";
+export type TestCaseStatus = "pending" | "approved" | "needs_review" | "archived";
 
 export interface LocatorTarget {
   strategy: string;
@@ -136,6 +136,28 @@ export interface RunSummary {
   total_job_time_ms: number;
   results: RunResultEntry[];
   summary: Record<string, number>;
+}
+
+export interface HealingCandidate {
+  strategy: string;
+  value: string;
+  confidence: number;
+  signal_breakdown: Record<string, number>;
+}
+
+export interface HealingEventLogEntry {
+  heal_id: string;
+  run_id: string;
+  step_id: string;
+  failure_type: string;
+  original_locator: LocatorTarget | null;
+  original_mapping: Record<string, unknown> | null;
+  candidates: HealingCandidate[];
+  applied: HealingCandidate | null;
+  auto_applied: boolean;
+  escalated_to_vision: boolean;
+  escalated_to_llm: boolean;
+  resolution: "accepted" | "rejected" | null;
 }
 
 export class ApiError extends Error {
@@ -261,6 +283,19 @@ export const apiClient = {
     ),
 
   getRun: (runId: string) => request<RunSummary>(`/api/v1/runs/${runId}`),
+
+  getHealingLog: (projectId: string, testCaseId: string) =>
+    request<HealingEventLogEntry[]>(`/api/v1/projects/${projectId}/test-cases/${testCaseId}/healing-log`),
+
+  resolveHealing: (healId: string, action: "accept" | "reject") =>
+    request<HealingEventLogEntry>(`/api/v1/healing/${healId}/resolve`, {
+      method: "POST",
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ action }),
+    }),
+
+  getScreenshotUrl: (runId: string, filename: string) =>
+    `${BASE_URL}/api/v1/runs/${runId}/screenshots/${filename}`,
 
   downloadEnvironmentSampleJson: async (): Promise<Blob> => {
     const response = await fetch(`${BASE_URL}/api/v1/projects/environments/sample-json`);

@@ -5,8 +5,9 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, TypeAdapter
 
 
 def atomic_write_bytes(path: Path, data: bytes) -> None:
@@ -17,3 +18,7 @@ def atomic_write_bytes(path: Path, data: bytes) -> None:
 
 def atomic_write_json(path: Path, model: BaseModel) -> None:
     atomic_write_bytes(path, model.model_dump_json(indent=2).encode("utf-8"))
+
+
+def atomic_write_list_json(path: Path, adapter: TypeAdapter[Any], items: list[Any]) -> None:
+    atomic_write_bytes(path, adapter.dump_json(items, indent=2))

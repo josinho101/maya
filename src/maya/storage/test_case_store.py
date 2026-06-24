@@ -48,6 +48,8 @@ class TestCaseStore:
         return self.find(test_case_id)[0]
 
     def list(self, status: str) -> list[UITestCase | APITestCase]:
+        if status == "needs_review":
+            return [tc for tc in self.list("approved") if tc.status == "needs_review"]
         if status not in _STATUSES:
             raise ValueError(f"unknown status {status!r}, expected one of {_STATUSES}")
         return [
@@ -56,9 +58,13 @@ class TestCaseStore:
         ]
 
     def update(self, test_case_id: str, **fields: object) -> UITestCase | APITestCase:
-        if "status" in fields:
-            raise ValueError("update() cannot change status — use move() instead")
         test_case, status = self.find(test_case_id)
+        # A directory-status value is only allowed here when it matches the
+        # directory the file already lives in (e.g. clearing a "needs_review" field
+        # flag back to "approved" while the file never left approved/) — an actual
+        # cross-directory move must go through move() instead.
+        if fields.get("status") in _STATUSES and fields["status"] != status:
+            raise ValueError("update() cannot move between pending/approved/archived — use move() instead")
         updated = test_case.model_copy(update=fields)
         atomic_write_json(self._tc_dir / status / f"{test_case_id}.json", updated)
         return updated
