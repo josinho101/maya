@@ -18,7 +18,17 @@ from maya.storage.models import AuthConfig
 from maya.storage.test_case_store import TestCaseStore
 
 
-def run_exploration(root_dir: Path, project_id: str, environment_id: str) -> list[str]:
+def run_exploration(
+    root_dir: Path,
+    project_id: str,
+    environment_id: str,
+    *,
+    view_identity: str | None = None,
+) -> list[str]:
+    """`view_identity`, when given (F8-040's scoped re-exploration), filters the
+    returned id list down to test cases the run actually produced for that view —
+    a simple post-hoc filter, not steering the agent to only look at that view
+    (full "only explore this exact view" targeting is future work)."""
     root_dir = Path(root_dir)
 
     project_manager = ProjectManager(root_dir)
@@ -62,9 +72,17 @@ def run_exploration(root_dir: Path, project_id: str, environment_id: str) -> lis
             else:
                 driver.navigate(base_url)
 
-        return agent.run(
+        created_ids = agent.run(
             max_steps=project.exploration.max_steps,
             plateau_steps=project.exploration.plateau_steps,
         )
+        if view_identity is None:
+            return created_ids
+        pending_by_id = {tc.id: tc for tc in test_case_store.list("pending")}
+        return [
+            tc_id
+            for tc_id in created_ids
+            if tc_id in pending_by_id and pending_by_id[tc_id].view_identity == view_identity
+        ]
     finally:
         driver.close()

@@ -9,14 +9,12 @@ import httpx
 import pytest
 
 DEMO_APP_DIR = Path(__file__).parent / "fixtures" / "demo_app"
+DEMO_APP_MUTATED_DIR = Path(__file__).parent / "fixtures" / "demo_app_mutated"
 OLLAMA_HOST = "http://localhost:11434"
 
 
-@pytest.fixture(scope="session")
-def demo_app_url() -> str:
-    """Serves tests/fixtures/demo_app over real HTTP — storage-state (localStorage/cookies)
-    persistence only works for http(s) origins, not file:// pages."""
-    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(DEMO_APP_DIR))
+def _serve_dir(directory: Path):
+    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(directory))
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -26,6 +24,21 @@ def demo_app_url() -> str:
     finally:
         server.shutdown()
         thread.join()
+
+
+@pytest.fixture(scope="session")
+def demo_app_url() -> str:
+    """Serves tests/fixtures/demo_app over real HTTP — storage-state (localStorage/cookies)
+    persistence only works for http(s) origins, not file:// pages."""
+    yield from _serve_dir(DEMO_APP_DIR)
+
+
+@pytest.fixture(scope="session")
+def demo_app_mutated_url() -> str:
+    """Serves tests/fixtures/demo_app_mutated — same page as demo_app_url but with
+    `counter-button`'s data-testid renamed to `counter-button-v2`, simulating the
+    "key element renamed" structural-major change F8's diff gate must detect."""
+    yield from _serve_dir(DEMO_APP_MUTATED_DIR)
 
 
 def _list_ollama_models() -> list[str] | None:

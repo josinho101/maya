@@ -4,6 +4,7 @@ view snapshot, run summary, healing event) per plan.md §3.4."""
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from enum import Enum
 from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field, TypeAdapter
@@ -167,8 +168,18 @@ class ViewSnapshotElement(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class Severity(str, Enum):
+    """Shared none/cosmetic/structural-minor/structural-major vocabulary (plan.md §11.2),
+    reused by the UI view-diff gate (F8) and the API spec-diff gate (F16-120)."""
+
+    NONE = "none"
+    COSMETIC = "cosmetic"
+    STRUCTURAL_MINOR = "structural-minor"
+    STRUCTURAL_MAJOR = "structural-major"
+
+
 class ViewDiff(BaseModel):
-    severity: Literal["none", "cosmetic", "structural-minor", "structural-major"]
+    severity: Severity
     added: list[Any] = Field(default_factory=list)
     removed: list[Any] = Field(default_factory=list)
     changed: list[Any] = Field(default_factory=list)
