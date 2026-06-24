@@ -7,7 +7,7 @@ import pytest
 from maya.adapters.ollama_adapter import OllamaAdapter
 from maya.config import GlobalConfig
 
-from .conftest import OLLAMA_HOST
+from ..conftest import OLLAMA_HOST
 
 SAMPLE_PNG = Path(__file__).parent.parent / "fixtures" / "sample.png"
 

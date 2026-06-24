@@ -14,6 +14,9 @@ from pydantic import BaseModel, Field, TypeAdapter
 class ExplorationConfig(BaseModel):
     """Shared exploration budgets/defaults, overridable per-environment."""
 
+    max_steps: int = 30
+    plateau_steps: int = 5
+
     model_config = {"extra": "allow"}
 
 
@@ -53,6 +56,9 @@ class Project(BaseModel):
 class AuthConfig(BaseModel):
     strategy: str
     secure_ref: str
+    username_field: LocatorTarget | None = None
+    password_field: LocatorTarget | None = None
+    submit_button: LocatorTarget | None = None
 
 
 class UIPackage(BaseModel):

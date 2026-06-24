@@ -23,7 +23,11 @@ PROJECT_JSON = {
     "test_types": ["ui", "api"],
     "default_environment": "staging",
     "environments": ["dev", "staging", "prod"],
-    "exploration": {"budget": "shared defaults, overridable per-environment"},
+    "exploration": {
+        "max_steps": 30,
+        "plateau_steps": 5,
+        "budget": "shared defaults, overridable per-environment",
+    },
     "healing": {"auto_apply_threshold": 0.90, "vision_fallback_after_attempts": 2},
     "notifications": {"on_failure": "slack"},
     "concurrency": {"max_parallel_jobs": 4},
