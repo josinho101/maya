@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from maya.api.routers import health, projects
+from maya.api.routers import health, projects, test_cases
 from maya.logging_setup import configure_logging
 from maya.managers.project_manager import (
     ArchivedError,
@@ -21,6 +21,7 @@ from maya.managers.project_manager import (
 )
 from maya.managers.slugify import EmptySlugError
 from maya.startup_checks import check_secure_config_not_tracked
+from maya.storage.test_case_store import TestCaseNotFoundError, TestCaseStatusConflictError
 
 FRAMEWORK_DATA_DIR = Path("framework-data")
 
@@ -59,11 +60,17 @@ def _handle_not_found(request: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(status_code=404, content={"detail": str(exc)})
 
 
+@app.exception_handler(TestCaseNotFoundError)
+def _handle_test_case_not_found(request: Request, exc: Exception) -> JSONResponse:
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+
 @app.exception_handler(ProjectAlreadyExistsError)
 @app.exception_handler(EnvironmentAlreadyExistsError)
 @app.exception_handler(ProjectNameAlreadyExistsError)
 @app.exception_handler(EnvironmentTagAlreadyExistsError)
 @app.exception_handler(ArchivedError)
+@app.exception_handler(TestCaseStatusConflictError)
 def _handle_conflict(request: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(status_code=409, content={"detail": str(exc)})
 
@@ -76,3 +83,4 @@ def _handle_invalid(request: Request, exc: Exception) -> JSONResponse:
 
 app.include_router(health.router)
 app.include_router(projects.router)
+app.include_router(test_cases.router)

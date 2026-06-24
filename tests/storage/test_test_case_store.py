@@ -4,7 +4,11 @@ from pathlib import Path
 import pytest
 
 from maya.storage.models import TestCaseAdapter, UITestCase
-from maya.storage.test_case_store import TestCaseStore
+from maya.storage.test_case_store import (
+    TestCaseNotFoundError,
+    TestCaseStatusConflictError,
+    TestCaseStore,
+)
 
 
 @pytest.fixture
@@ -101,6 +105,56 @@ def test_move_same_status_raises(store: TestCaseStore):
     tc_id = store.create(make_ui_test_case())
     with pytest.raises(ValueError):
         store.move(tc_id, "pending", "pending")
+
+
+def test_find_returns_test_case_and_status(store: TestCaseStore):
+    tc_id = store.create(make_ui_test_case())
+
+    found, status = store.find(tc_id)
+    assert found.id == tc_id
+    assert status == "pending"
+
+
+def test_find_missing_raises(store: TestCaseStore):
+    with pytest.raises(TestCaseNotFoundError):
+        store.find("tc_doesnotexist")
+
+
+def test_update_persists_in_place_without_changing_status(store: TestCaseStore, tmp_path: Path):
+    tc_id = store.create(make_ui_test_case())
+
+    updated = store.update(tc_id, tags=["reviewed"])
+    assert updated.tags == ["reviewed"]
+    assert updated.status == "pending"
+    assert (tmp_path / "test_cases" / "pending" / f"{tc_id}.json").exists()
+
+    refetched = store.get(tc_id)
+    assert refetched.tags == ["reviewed"]
+
+
+def test_update_rejects_status_kwarg(store: TestCaseStore):
+    tc_id = store.create(make_ui_test_case())
+    with pytest.raises(ValueError):
+        store.update(tc_id, status="approved")
+
+
+def test_move_returns_updated_test_case_with_extra_fields(store: TestCaseStore):
+    tc_id = store.create(make_ui_test_case())
+
+    archived = store.move(tc_id, "pending", "archived", rejection_reason="bad locator")
+    assert archived.status == "archived"
+    assert archived.rejection_reason == "bad locator"
+
+    refetched = store.get(tc_id)
+    assert refetched.rejection_reason == "bad locator"
+
+
+def test_move_status_conflict_when_not_in_from_status(store: TestCaseStore):
+    tc_id = store.create(make_ui_test_case())
+    store.move(tc_id, "pending", "archived", rejection_reason="bad locator")
+
+    with pytest.raises(TestCaseStatusConflictError):
+        store.move(tc_id, "pending", "approved")
 
 
 def test_concurrent_create_both_succeed(store: TestCaseStore, tmp_path: Path):

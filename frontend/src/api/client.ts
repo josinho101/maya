@@ -78,6 +78,46 @@ export interface EnvironmentImportManifest {
   env_vars: Record<string, string>;
 }
 
+export type TestCaseStatus = "pending" | "approved" | "archived";
+
+export interface LocatorTarget {
+  strategy: string;
+  value: string;
+}
+
+export interface UIStep {
+  action: string;
+  target: LocatorTarget | null;
+  input: unknown | null;
+  assertion: unknown | null;
+  fixture_ref: string | null;
+}
+
+interface TestCaseCommon {
+  id: string;
+  status: TestCaseStatus;
+  rejection_reason: string | null;
+  created_by: "exploration_agent" | "scenario_interpreter" | "api_discovery_agent" | "human";
+  source_scenario_ref: string | null;
+  tags: string[];
+  healing_history_ref: string | null;
+  last_run_status: string | null;
+  last_execution_time_ms: number | null;
+}
+
+export interface UITestCase extends TestCaseCommon {
+  protocol: "ui";
+  view_identity: string;
+  locator_confidence: number;
+  steps: UIStep[];
+}
+
+export interface APITestCase extends TestCaseCommon {
+  protocol: "api";
+}
+
+export type TestCase = UITestCase | APITestCase;
+
 export class ApiError extends Error {
   status: number;
   detail?: string;
@@ -168,6 +208,31 @@ export const apiClient = {
       `/api/v1/projects/${projectId}/environments/${envId}/packages/${testType}`,
       { method: "PUT", headers: JSON_HEADERS, body: JSON.stringify(body) },
     ),
+
+  listTestCases: (projectId: string, status: TestCaseStatus, protocol?: TestType) => {
+    const params = new URLSearchParams({ status });
+    if (protocol) params.set("protocol", protocol);
+    return request<TestCase[]>(`/api/v1/projects/${projectId}/test-cases?${params.toString()}`);
+  },
+
+  approveTestCase: (projectId: string, testCaseId: string) =>
+    request<TestCase>(`/api/v1/projects/${projectId}/test-cases/${testCaseId}/approve`, {
+      method: "POST",
+    }),
+
+  rejectTestCase: (projectId: string, testCaseId: string, reason: string) =>
+    request<TestCase>(`/api/v1/projects/${projectId}/test-cases/${testCaseId}/reject`, {
+      method: "POST",
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ reason }),
+    }),
+
+  patchTestCaseSteps: (projectId: string, testCaseId: string, steps: UIStep[]) =>
+    request<TestCase>(`/api/v1/projects/${projectId}/test-cases/${testCaseId}`, {
+      method: "PATCH",
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ steps }),
+    }),
 
   downloadEnvironmentSampleJson: async (): Promise<Blob> => {
     const response = await fetch(`${BASE_URL}/api/v1/projects/environments/sample-json`);

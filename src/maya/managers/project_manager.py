@@ -138,6 +138,10 @@ class ProjectManager:
             raise ProjectNotFoundError(project_id)
         return Project.model_validate_json(path.read_bytes())
 
+    def project_dir(self, project_id: str) -> Path:
+        self.get_project(project_id)
+        return self._project_dir(project_id)
+
     def update_project(
         self,
         project_id: str,

@@ -115,6 +115,7 @@ class TestCaseBase(BaseModel):
     id: str = ""
     protocol: str
     status: Literal["pending", "approved", "needs_review", "archived"] = "pending"
+    rejection_reason: str | None = None
     created_by: Literal["exploration_agent", "scenario_interpreter", "api_discovery_agent", "human"]
     source_scenario_ref: str | None = None
     tags: list[str] = Field(default_factory=list)

@@ -16,6 +16,14 @@ from maya.storage.models import APITestCase, TestCaseAdapter, UITestCase
 _STATUSES = ("pending", "approved", "archived")
 
 
+class TestCaseNotFoundError(FileNotFoundError):
+    __test__ = False  # not a pytest test class despite the name
+
+
+class TestCaseStatusConflictError(RuntimeError):
+    __test__ = False  # not a pytest test class despite the name
+
+
 class TestCaseStore:
     __test__ = False  # not a pytest test class despite the name
 
@@ -29,12 +37,15 @@ class TestCaseStore:
         atomic_write_json(path, test_case)
         return test_case.id
 
-    def get(self, test_case_id: str) -> UITestCase | APITestCase:
+    def find(self, test_case_id: str) -> tuple[UITestCase | APITestCase, str]:
         for status in _STATUSES:
             path = self._tc_dir / status / f"{test_case_id}.json"
             if path.exists():
-                return TestCaseAdapter.validate_json(path.read_bytes())
-        raise FileNotFoundError(f"test case {test_case_id!r} not found in any status directory")
+                return TestCaseAdapter.validate_json(path.read_bytes()), status
+        raise TestCaseNotFoundError(f"test case {test_case_id!r} not found in any status directory")
+
+    def get(self, test_case_id: str) -> UITestCase | APITestCase:
+        return self.find(test_case_id)[0]
 
     def list(self, status: str) -> list[UITestCase | APITestCase]:
         if status not in _STATUSES:
@@ -44,23 +55,31 @@ class TestCaseStore:
             for path in sorted((self._tc_dir / status).glob("tc_*.json"))
         ]
 
-    def move(self, test_case_id: str, from_status: str, to_status: str) -> None:
+    def update(self, test_case_id: str, **fields: object) -> UITestCase | APITestCase:
+        if "status" in fields:
+            raise ValueError("update() cannot change status — use move() instead")
+        test_case, status = self.find(test_case_id)
+        updated = test_case.model_copy(update=fields)
+        atomic_write_json(self._tc_dir / status / f"{test_case_id}.json", updated)
+        return updated
+
+    def move(
+        self, test_case_id: str, from_status: str, to_status: str, **extra_fields: object
+    ) -> UITestCase | APITestCase:
         if from_status not in _STATUSES or to_status not in _STATUSES:
             raise ValueError(f"unknown status, expected one of {_STATUSES}")
         if from_status == to_status:
             raise ValueError("from_status and to_status must differ")
 
+        test_case, current_status = self.find(test_case_id)
+        if current_status != from_status:
+            raise TestCaseStatusConflictError(
+                f"test case {test_case_id!r} is in {current_status!r}, not {from_status!r}"
+            )
+
+        updated = test_case.model_copy(update={**extra_fields, "status": to_status})
         src = self._tc_dir / from_status / f"{test_case_id}.json"
-        if not src.exists():
-            raise FileNotFoundError(f"test case {test_case_id!r} not found in {from_status!r}")
-
-        test_case = TestCaseAdapter.validate_json(src.read_bytes())
-        updated = test_case.model_copy(update={"status": to_status})
         dst = self._tc_dir / to_status / f"{test_case_id}.json"
-
-        try:
-            atomic_write_json(dst, updated)
-        except FileExistsError:
-            atomic_write_json(dst, updated)
-
+        atomic_write_json(dst, updated)
         os.remove(src)
+        return updated

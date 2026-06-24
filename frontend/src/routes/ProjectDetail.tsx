@@ -46,14 +46,16 @@ export default function ProjectDetail() {
   const navItems = buildProjectNavItems(projectId);
   const currentSection = navItems.find((item) => location.pathname.startsWith(item.path));
   const envId = location.pathname.match(/\/environments\/([^/]+)/)?.[1];
+  const testCaseId = location.pathname.match(/\/test-cases\/([^/]+)/)?.[1];
+  const detailId = envId ?? testCaseId;
 
   const breadcrumbSegments: BreadcrumbSegment[] = [
     { label: "Projects", to: "/projects" },
     { label: project.name, to: currentSection ? currentSection.path : undefined },
     ...(currentSection
-      ? [{ label: currentSection.label, to: envId ? currentSection.path : undefined }]
+      ? [{ label: currentSection.label, to: detailId ? currentSection.path : undefined }]
       : []),
-    ...(envId ? [{ label: envId }] : []),
+    ...(detailId ? [{ label: detailId }] : []),
   ];
 
   return (
@@ -65,7 +67,7 @@ export default function ProjectDetail() {
         <Routes>
           <Route index element={<Navigate to="environments" replace />} />
           <Route path="environments/*" element={<EnvironmentsPanel project={project} />} />
-          <Route path="test-cases" element={<TestCasesPage />} />
+          <Route path="test-cases/*" element={<TestCasesPage project={project} />} />
           <Route path="runs" element={<RunsPage />} />
           <Route path="healing" element={<HealingPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
