@@ -1,7 +1,0 @@
-{
-  "ollama_host": "http://localhost:11434",
-  "model_preferences": {
-    "ui_explore_heal": ["qwen2.5vl:7b", "qwen2.5vl:3b"],
-    "api_reasoning": ["qwen2.5:7b-instruct"]
-  }
-}

@@ -1,39 +1,38 @@
-# Python
+# Byte-compiled / optimized files
 __pycache__/
 *.py[cod]
+*$py.class
+
+# Distribution / packaging
 *.egg-info/
-.eggs/
-build/
 dist/
+build/
 
 # Virtual environments
 .venv/
 venv/
 env/
 
-# uv
-.uv-cache/
+# Environment variables
+.env
 
-# Test / coverage / tool caches
+# Testing / coverage
 .pytest_cache/
-.ruff_cache/
-.mypy_cache/
-htmlcov/
 .coverage
+htmlcov/
 
-# Editors / OS
+# Type checking / linting caches
+.mypy_cache/
+.ruff_cache/
+
+# Logs
+*.log
+
+# Framework-generated data (data/, output/, execution_results/, logs/)
+framework_data/
+
+# OS / editor
+.DS_Store
 .vscode/
 .idea/
-.DS_Store
-
-# MAYA runtime data (plan.md §3.3) — framework-data/ lives in repo working dir at runtime
-framework-data/config/secure/
-framework-data/logs/
-framework-data/runtime/
-*.local.json
-
-# Frontend
-frontend/node_modules/
-frontend/dist/
-
-framework-data/
+.claude/

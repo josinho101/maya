@@ -1,0 +1,26 @@
+{
+  "project": {
+    "name": "",
+    "base_url": ""
+  },
+  "apis": [
+    {
+      "api_sha256": "",
+      "feature": "",
+      "requirements": {
+        "description": "",
+        "acceptance_criteria": []
+      },
+      "api_details": {
+        "endpoint": "",
+        "method": "",
+        "headers": {},
+        "parameters": [],
+        "request_schema": {},
+        "response_schema": {},
+        "response_descriptions": {}
+      },
+      "existing":""
+    }
+  ]
+}

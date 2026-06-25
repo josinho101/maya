@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MAYA - Execution Report</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Inter", "Roboto", sans-serif;
+    background-color: #0D0D0D;
+    color: #E0E0E0;
+    margin: 20px;
+}
+
+h1 {
+    color: #FFFFFF;
+    margin-bottom: 5px;
+}
+
+.report-header {
+    margin-bottom: 20px;
+}
+
+.top-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.summary-container {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.card {
+    width: 100px;
+    padding: 10px;
+    border-radius: 10px;
+    text-align: center;
+    color: white;
+    font-weight: bold;
+    box-shadow: 0px 2px 12px rgba(0,0,0,0.5);
+}
+
+.card h2 {
+    margin: 0;
+    font-size: 22px;
+}
+
+.card p {
+    margin-top: 6px;
+    font-size: 13px;
+}
+
+.total {
+    background: #7C4DFF;
+}
+
+.pass {
+    background: #66BB6A;
+}
+
+.fail {
+    background: #EF5350;
+}
+
+.skip {
+    background: #9E9E9E;
+}
+
+.chart-container {
+    width: 180px;
+    height: 180px;
+}
+
+.success-rate {
+    font-size: 18px;
+    font-weight: bold;
+    color: #E0E0E0;
+    margin-bottom: 20px;
+    margin-top: 16px;
+}
+
+.header-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    flex-wrap: wrap;
+    gap: 10px;
+    color: #aaa;
+}
+
+.table-container {
+    overflow-x: auto;
+    width: 100%;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #1A1A2E;
+}
+
+th {
+    background: #2A2A4A;
+    color: #E0E0E0;
+    padding: 12px;
+    text-align: left;
+    white-space: nowrap;
+}
+
+td {
+    padding: 10px;
+    border: 1px solid #2A2A4A;
+    vertical-align: top;
+    color: #E0E0E0;
+}
+
+.pass-badge {
+    background: #66BB6A;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.fail-badge {
+    background: #EF5350;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.skip-badge {
+    background: #9E9E9E;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-width: 500px;
+    overflow-x: auto;
+    background: #0D0D0D;
+    color: #B0BEC5;
+    border: 1px solid #2A2A4A;
+    border-radius: 6px;
+    padding: 8px;
+    margin: 6px 0 0 0;
+    font-size: 12px;
+}
+
+details {
+    cursor: pointer;
+}
+
+details > summary {
+    color: #7C4DFF;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    padding: 2px 0;
+}
+
+details > summary:hover {
+    color: #9C6FFF;
+}
+
+.json-view {
+    max-height: 250px;
+    overflow: auto;
+    resize: both;
+    min-height: 60px;
+}
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.search-input {
+    background: #1A1A2E;
+    border: 1px solid #2A2A4A;
+    border-radius: 5px;
+    color: #E0E0E0;
+    padding: 8px 12px;
+    font-family: inherit;
+    font-size: 14px;
+    width: 260px;
+    outline: none;
+}
+
+.search-input::placeholder {
+    color: #666;
+}
+
+.search-input:focus {
+    border-color: #7C4DFF;
+}
+
+.filter-btn {
+    padding: 8px 15px;
+    border-radius: 5px;
+    border: 1px solid #2A2A4A;
+    background: transparent;
+    color: #aaa;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.filter-btn.active {
+    background: #7C4DFF;
+    border-color: #7C4DFF;
+    color: #fff;
+}
+
+.filter-btn:hover:not(.active) {
+    border-color: #7C4DFF;
+    color: #E0E0E0;
+}
+
+.action-btn {
+    padding: 8px 15px;
+    border-radius: 5px;
+    border: none;
+    background: #7C4DFF;
+    color: white;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.action-btn:hover {
+    background: #9C6FFF;
+}
+
+.no-results {
+    text-align: center;
+    color: #aaa;
+    padding: 24px;
+    display: none;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="report-header">
+
+    <h1>Execution Report</h1>
+
+    <div class="header-info">
+
+        <div>
+            <b>Generated On:</b>
+            $generated_on
+        </div>
+
+        <div>
+            <b>Total Execution Time:</b>
+            $total_execution_time ms
+        </div>
+
+    </div>
+
+</div>
+
+<div class="top-section">
+
+    <div>
+
+        <div class="summary-container">
+
+            <div class="card total">
+                <h2>$total</h2>
+                <p>Total</p>
+            </div>
+
+            <div class="card pass">
+                <h2>$passed</h2>
+                <p>Pass</p>
+            </div>
+
+            <div class="card fail">
+                <h2>$failed</h2>
+                <p>Fail</p>
+            </div>
+
+            <div class="card skip">
+                <h2>$skipped</h2>
+                <p>Skip</p>
+            </div>
+
+        </div>
+
+        <div class="success-rate">
+            Success Rate: $success_rate%
+        </div>
+
+    </div>
+
+    <div class="chart-container">
+        <canvas id="resultChart"></canvas>
+    </div>
+
+</div>
+
+<div class="toolbar">
+    <input
+        class="search-input"
+        type="text"
+        id="searchInput"
+        placeholder="Search by TC ID or scenario..."
+        oninput="applyFilter()"
+    />
+    <button class="filter-btn active" id="btn-all"  onclick="setFilter('all')">All</button>
+    <button class="filter-btn"        id="btn-pass" onclick="setFilter('pass')">Pass</button>
+    <button class="filter-btn"        id="btn-fail" onclick="setFilter('fail')">Fail</button>
+    <button class="filter-btn"        id="btn-skip" onclick="setFilter('skip')">Skip</button>
+    <button class="action-btn" onclick="expandAll()"  style="margin-left:auto">Expand All</button>
+    <button class="action-btn" onclick="collapseAll()">Collapse All</button>
+</div>
+<div class="no-results" id="noResults">No matching test cases found.</div>
+
+<div class="table-container">
+<table>
+
+<tr>
+    <th>TC ID</th>
+    <th>Scenario</th>
+    <th>Role</th>
+    <th>Status</th>
+    <th>Expected</th>
+    <th>Actual</th>
+    <th>Execution Time</th>
+    <th>Request Data</th>
+    <th>Response</th>
+    <th>Error</th>
+</tr>
+
+$rows
+
+</table>
+</div>
+
+<script>
+
+const ctx = document.getElementById('resultChart');
+
+new Chart(ctx, {
+    type: 'pie',
+    data: {
+        labels: ['Passed', 'Failed', 'Skipped'],
+        datasets: [{
+            data: [$passed, $failed, $skipped],
+            backgroundColor: [
+                '#66BB6A',
+                '#EF5350',
+                '#9E9E9E',
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    color: '#E0E0E0'
+                }
+            }
+        }
+    }
+});
+
+</script>
+
+<script>
+
+let activeFilter = 'all';
+
+function setFilter(f) {
+    activeFilter = f;
+    ['all', 'pass', 'fail', 'skip'].forEach(id => {
+        document.getElementById('btn-' + id).classList.toggle('active', id === f);
+    });
+    applyFilter();
+}
+
+function applyFilter() {
+    const query   = document.getElementById('searchInput').value.toLowerCase();
+    const allRows = document.querySelectorAll('table tr');
+    let visible   = 0;
+
+    allRows.forEach(row => {
+        if (!row.querySelector('td')) return; // skip header row
+
+        // Status: derive from badge class (works in all reports, old and new)
+        const rowStatus = row.querySelector('.pass-badge') ? 'pass'
+                        : row.querySelector('.fail-badge') ? 'fail'
+                        : row.querySelector('.skip-badge') ? 'skip'
+                        : '';
+
+        // Search text: prefer data-* attrs (new reports), fall back to cell text
+        const tcid = ('tcid' in row.dataset)
+            ? row.dataset.tcid
+            : (row.cells[0] ? row.cells[0].textContent.trim().toLowerCase() : '');
+        const scenario = ('scenario' in row.dataset)
+            ? row.dataset.scenario
+            : (row.cells[1] ? row.cells[1].textContent.trim().toLowerCase() : '');
+
+        const statusMatch = activeFilter === 'all' || rowStatus === activeFilter;
+        const searchMatch = !query || tcid.includes(query) || scenario.includes(query);
+
+        const show = statusMatch && searchMatch;
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+
+    document.getElementById('noResults').style.display = visible === 0 ? 'block' : 'none';
+}
+
+function expandAll() {
+    document.querySelectorAll('details.expandable').forEach(d => d.open = true);
+}
+
+function collapseAll() {
+    document.querySelectorAll('details.expandable').forEach(d => d.open = false);
+}
+
+</script>
+
+</body>
+</html>
