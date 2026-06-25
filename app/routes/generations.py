@@ -32,7 +32,9 @@ def add_testcase(project_id, gen_id):
     endpoint = body.get("endpoint")
     method = body.get("method")
     new_tc = {k: v for k, v in body.items() if k not in ("endpoint", "method")}
-    return jsonify(generations_controller.add_testcase(project_id, gen_id, endpoint, method, new_tc)), 201
+    return jsonify(
+        generations_controller.add_testcase(project_id, gen_id, endpoint, method, new_tc, needs_review=False)
+    ), 201
 
 
 @bp.put("/projects/<project_id>/generations/<gen_id>/testcases/<tc_id>")

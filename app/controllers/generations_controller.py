@@ -235,11 +235,11 @@ def edit_testcase(project_id, gen_id, tc_id, updated_tc):
     for result in data.get("results", []):
         for i, tc in enumerate(result.get("test_cases", [])):
             if tc.get("tc_id") == tc_id:
-                # The edited content was never reviewed in this form, even if
-                # the generation was previously approved - force it back into
-                # the review queue. tc_id is pinned to the URL param so the
-                # request body can't accidentally move the edit elsewhere.
-                updated_tc = {**updated_tc, "tc_id": tc_id, "needs_review": True}
+                # A human just wrote this content, so it's already reviewed -
+                # only LLM output needs the review queue. tc_id is pinned to
+                # the URL param so the request body can't accidentally move
+                # the edit elsewhere.
+                updated_tc = {**updated_tc, "tc_id": tc_id, "needs_review": False}
                 result["test_cases"][i] = updated_tc
                 found = True
                 break
@@ -250,6 +250,15 @@ def edit_testcase(project_id, gen_id, tc_id, updated_tc):
         raise NotFound(f"tc_id '{tc_id}' not found")
 
     _save_testcases_data(gen, data)
+
+    still_pending = any(
+        tc.get("needs_review")
+        for result in data.get("results", [])
+        for tc in result.get("test_cases", [])
+    )
+    if gen["status"] == "REVIEW" and not still_pending:
+        gen["status"] = "APPROVED"
+        _save_generation(p["slug"], gen)
 
     logger.info("Test case %s edited (project=%s gen=%s)", tc_id, project_id, gen_id)
 
@@ -313,7 +322,7 @@ def delete_testcase(project_id, gen_id, tc_id):
     return {"deleted": tc_id}
 
 
-def add_testcase(project_id, gen_id, endpoint, method, new_tc):
+def add_testcase(project_id, gen_id, endpoint, method, new_tc, needs_review=True):
     p, gen = _get_project_and_generation(project_id, gen_id)
 
     if not new_tc:
@@ -343,7 +352,7 @@ def add_testcase(project_id, gen_id, endpoint, method, new_tc):
 
     tc_id = TCIDGenerator.next_id(existing_test_cases, idx + 1)
 
-    saved_tc = {**new_tc, "tc_id": tc_id, "source": "manual", "needs_review": True}
+    saved_tc = {**new_tc, "tc_id": tc_id, "source": "manual", "needs_review": needs_review}
     existing_test_cases.append(saved_tc)
 
     _save_testcases_data(gen, data)
