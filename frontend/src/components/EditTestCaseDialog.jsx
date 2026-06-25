@@ -3,13 +3,15 @@ import {
   Box, Button, CircularProgress, Alert, Dialog, DialogTitle,
   DialogContent, DialogActions, TextField, Chip,
 } from "@mui/material";
+import FileFieldEditor from "./FileFieldEditor";
+import { getTestcaseSample } from "../api/client";
 
 const LIFECYCLE_ROLE_COLOR = {
   create: "success", read: "info", update: "warning", delete: "error",
   verify_create: "secondary", verify_update: "secondary", verify_delete: "secondary",
 };
 
-function JsonField({ label, value, onChange }) {
+export function JsonField({ label, value, onChange }) {
   const [raw, setRaw] = useState(typeof value === "string" ? value : JSON.stringify(value, null, 2));
   const [err, setErr] = useState("");
   const handleChange = (v) => {
@@ -29,14 +31,31 @@ function JsonField({ label, value, onChange }) {
   );
 }
 
-export default function EditTestCaseDialog({ open, tc, onClose, onSave }) {
+export default function EditTestCaseDialog({ open, tc, endpoint, method, projectId, genId, onClose, onSave }) {
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
+  const [fileFields, setFileFields] = useState([]);
+  const [acceptsFile, setAcceptsFile] = useState(false);
 
   useEffect(() => {
     if (tc) setForm(JSON.parse(JSON.stringify(tc)));
   }, [tc]);
+
+  useEffect(() => {
+    if (!tc || !endpoint || !method) return;
+    // Only file_fields/accepts_file are used here - the sample itself is
+    // ignored so opening Edit never overwrites the test case's real values.
+    getTestcaseSample(projectId, genId, endpoint, method)
+      .then(({ file_fields, accepts_file }) => {
+        setFileFields(file_fields || []);
+        setAcceptsFile(accepts_file);
+      })
+      .catch(() => {
+        setFileFields([]);
+        setAcceptsFile(false);
+      });
+  }, [tc, endpoint, method, projectId, genId]);
 
   const handleSave = async () => {
     try {
@@ -77,6 +96,11 @@ export default function EditTestCaseDialog({ open, tc, onClose, onSave }) {
           onChange={(v) => setForm({ ...form, headers: v })} />
         <JsonField label="Request Data" value={form.request_data || {}}
           onChange={(v) => setForm({ ...form, request_data: v })} />
+        <FileFieldEditor
+          projectId={projectId} genId={genId}
+          files={form.files || {}} fileFields={fileFields} acceptsFile={acceptsFile}
+          onChange={(files) => setForm({ ...form, files })}
+        />
         <JsonField label="Expected Response" value={form.expected_response || {}}
           onChange={(v) => setForm({ ...form, expected_response: v })} />
       </DialogContent>

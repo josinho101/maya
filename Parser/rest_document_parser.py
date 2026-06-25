@@ -10,7 +10,7 @@ from Utils.logger import logger
 
 class RestDocumentParser:
 
-    def parse(self, input):
+    def parse(self, input, namespace=None):
 
         # Load input document (html/yml)
         source_data = SourceLoader.load(input)
@@ -20,7 +20,13 @@ class RestDocumentParser:
         if not projectName:
             raise ValueError("Project name is missing or empty in the parsed output.")
         projectName = projectName.replace(" ", "_").lower()
-        projectPath = f"{PATHS['output']}/{projectName}"
+
+        # `namespace` (the app's project slug) keeps each project's output
+        # isolated on disk even when two swagger docs share the same
+        # info.title - otherwise unrelated projects collide on the same
+        # output folder and a generation run in one deletes/overwrites the
+        # other's test cases.
+        projectPath = f"{PATHS['output']}/{namespace}" if namespace else f"{PATHS['output']}/{projectName}"
         parsedJson = f"{projectPath}/{PATHS['parsed_api_filename']}"
 
         # load existing parsed json of the project 

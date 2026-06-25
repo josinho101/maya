@@ -87,7 +87,7 @@ def _parse_and_save_meta(slug, file_path, filename):
         from Parser.rest_document_parser import RestDocumentParser
 
         parser = RestDocumentParser()
-        project_path, parsed_json_path = parser.parse(file_path)
+        project_path, parsed_json_path = parser.parse(file_path, namespace=slug)
 
         with open(parsed_json_path, encoding="utf-8") as f:
             parsed = json.load(f)

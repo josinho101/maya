@@ -52,3 +52,25 @@ class PromptBuilder:
         variables = {"API_DETAILS": json.dumps(api["api_details"], indent=2)}
 
         return cls.render(template, variables)
+
+    @classmethod
+    def build_scenario_prompt(cls, api, scenario_text):
+        """
+        Single-test-case prompt for the "generate from scenario" feature -
+        same _shared_rules.md contract as a category-scoped bulk-generation
+        call, but grounded in a human-written scenario description instead of
+        an LLM-chosen category.
+        """
+
+        scenario_template = cls.load_prompt("from_scenario.md")
+        shared_rules = cls.load_prompt("_shared_rules.md")
+        template = (
+            f"{scenario_template}\n\n{shared_rules}\n\nAPI DETAILS:\n\n{{{{API_DETAILS}}}}"
+        )
+
+        variables = {
+            "API_DETAILS": json.dumps(api["api_details"], indent=2),
+            "USER_SCENARIO": scenario_text,
+        }
+
+        return cls.render(template, variables)

@@ -28,6 +28,7 @@ class TestcaseGenerator:
         existing_testcases_file=None,
         endpoints_to_regenerate=None,
         progress_callback=None,
+        stop_check=None,
     ):
         with open(parsed_input_file, "r") as f:
             api_input = json.load(f)
@@ -55,9 +56,20 @@ class TestcaseGenerator:
                     key = (result.get("endpoint"), result.get("method", "").upper())
                     for tc in result.get("test_cases", []):
                         tc.setdefault("lifecycle_role", "independent")
+                        # Legacy file written before source/needs_review existed,
+                        # or a previously-approved test case being reused as-is -
+                        # either way it doesn't need a fresh review pass.
+                        tc.setdefault("source", "system")
+                        tc.setdefault("needs_review", False)
                     existing_tc_map[key] = result
 
         for api_index, api in enumerate(apis, start=1):
+
+            if stop_check is not None and stop_check():
+                logger.info(
+                    f"Generation stopped by request after {api_index - 1}/{total} endpoints."
+                )
+                break
 
             endpoint = api.get("api_details", {}).get("endpoint", "")
             method = api.get("api_details", {}).get("method", "").upper()
@@ -91,6 +103,10 @@ class TestcaseGenerator:
                 parsed_response = TCIDGenerator.add_ids(parsed_response, api_index)
 
                 self._replace_test_data_files(parsed_response)
+
+                for tc in parsed_response.get("test_cases", []):
+                    tc["source"] = "system"
+                    tc["needs_review"] = True
 
                 final_results.append(parsed_response)
 
@@ -383,6 +399,8 @@ class TestcaseGenerator:
             "tc_id": f"{read_tc['tc_id']}_{tc_id_suffix}",
             "test_scenario": scenario,
             "lifecycle_role": lifecycle_role,
+            "source": "system",
+            "needs_review": True,
             "path_params": dict(read_tc.get("path_params", {})),
             "query_params": dict(read_tc.get("query_params", {})),
             "headers": dict(read_tc.get("headers", {})),
@@ -412,7 +430,8 @@ class TestcaseGenerator:
 
         return value
 
-    def _replace_test_data_files(self, parsed_response):
+    @staticmethod
+    def _replace_test_data_files(parsed_response):
         """
         Replace fake/generated filenames from LLM
         with actual files from test_data folder.
@@ -444,9 +463,10 @@ class TestcaseGenerator:
 
             replacement_file = INVALID_FILE if is_negative else VALID_FILE
 
-            self._replace_file_recursively(tc, replacement_file)
+            TestcaseGenerator._replace_file_recursively(tc, replacement_file)
 
-    def _replace_file_recursively(self, data, replacement_file):
+    @staticmethod
+    def _replace_file_recursively(data, replacement_file):
         """
         Recursively search testcase JSON
         and replace any fake filenames.
@@ -477,10 +497,10 @@ class TestcaseGenerator:
 
                 elif isinstance(value, (dict, list)):
 
-                    self._replace_file_recursively(value, replacement_file)
+                    TestcaseGenerator._replace_file_recursively(value, replacement_file)
 
         elif isinstance(data, list):
 
             for item in data:
 
-                self._replace_file_recursively(item, replacement_file)
+                TestcaseGenerator._replace_file_recursively(item, replacement_file)

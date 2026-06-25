@@ -52,8 +52,37 @@ export const editTestCase = (id, gid, tcId, data) =>
   api.put(`/projects/${id}/generations/${gid}/testcases/${tcId}`, data).then((r) => r.data);
 export const deleteTestCase = (id, gid, tcId) =>
   api.delete(`/projects/${id}/generations/${gid}/testcases/${tcId}`).then((r) => r.data);
+export const approveTestCase = (id, gid, tcId) =>
+  api.post(`/projects/${id}/generations/${gid}/testcases/${tcId}/approve`).then((r) => r.data);
+export const addTestCase = (id, gid, data) =>
+  api.post(`/projects/${id}/generations/${gid}/testcases`, data).then((r) => r.data);
 export const approveGeneration = (id, gid) =>
   api.post(`/projects/${id}/generations/${gid}/approve`).then((r) => r.data);
+export const stopGeneration = (id, gid) =>
+  api.post(`/projects/${id}/generations/${gid}/stop`).then((r) => r.data);
+
+// Test case sample / file uploads (manual add + edit dialogs)
+export const getTestcaseSample = (id, gid, endpoint, method) =>
+  api
+    .get(`/projects/${id}/generations/${gid}/testcases/sample`, { params: { endpoint, method } })
+    .then((r) => r.data);
+export const uploadTestcaseFile = (id, gid, file) => {
+  const form = new FormData();
+  form.append("file", file);
+  return api
+    .post(`/projects/${id}/generations/${gid}/testcase-files`, form)
+    .then((r) => r.data);
+};
+
+// Scenario-based generation (queued jobs)
+export const submitScenarioJob = (id, gid, body) =>
+  api.post(`/projects/${id}/generations/${gid}/scenario-jobs`, body).then((r) => r.data);
+export const listScenarioJobs = (id) =>
+  api.get(`/projects/${id}/scenario-jobs`).then((r) => r.data);
+export const getScenarioJob = (id, jobId) =>
+  api.get(`/projects/${id}/scenario-jobs/${jobId}`).then((r) => r.data);
+export const stopScenarioJob = (id, jobId) =>
+  api.post(`/projects/${id}/scenario-jobs/${jobId}/stop`).then((r) => r.data);
 
 // Executions
 export const executeGeneration = (id, gid) =>

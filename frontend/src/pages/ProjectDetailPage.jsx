@@ -2,24 +2,27 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Box, Typography, Button, ButtonGroup, Card, CardContent, CircularProgress,
   Alert, Chip, Table, TableBody, TableCell, TableHead, TableRow,
-  IconButton, Tooltip, LinearProgress,
+  IconButton, Tooltip, LinearProgress, Badge,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import LinkIcon from "@mui/icons-material/Link";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import RefreshIcon from "@mui/icons-material/Refresh";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import StopIcon from "@mui/icons-material/Stop";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   getProject, uploadSwagger, importSwaggerFromUrl, triggerGeneration, getGeneration,
-  listGenerations, listExecutions, getReportUrl,
+  listGenerations, listExecutions, getReportUrl, listScenarioJobs, stopScenarioJob,
+  stopGeneration,
 } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import StatusChip from "../components/StatusChip";
-import RegenerateDialog from "../components/RegenerateDialog";
 import ExecutionCharts from "../components/ExecutionCharts";
+
+const ACTIVE_JOB_STATUSES = ["QUEUED", "RUNNING"];
+const ACTIVE_GEN_STATUSES = ["PENDING", "GENERATING"];
 
 export default function ProjectDetailPage() {
   const { projectId } = useParams();
@@ -39,10 +42,10 @@ export default function ProjectDetailPage() {
   const [urlDialogOpen, setUrlDialogOpen] = useState(false);
   const [swaggerUrl, setSwaggerUrl] = useState("");
 
-  // Regenerate dialog state
-  const [regenOpen, setRegenOpen] = useState(false);
-  const [regenEndpoints, setRegenEndpoints] = useState([]);
-  const [regenLoading, setRegenLoading] = useState(false);
+  // Pending-review count + scenario jobs panel
+  const [pendingReviewCount, setPendingReviewCount] = useState(0);
+  const [scenarioJobs, setScenarioJobs] = useState([]);
+  const jobsPollRef = useRef(null);
 
   const fetchAll = useCallback(async () => {
     try {
@@ -54,6 +57,17 @@ export default function ProjectDetailPage() {
       setProject(proj);
       setGenerations(gens);
       setExecutions(execs);
+
+      const latestGen = gens.find((g) => ["REVIEW", "APPROVED", "STOPPED"].includes(g.status));
+      if (latestGen) {
+        const genData = await getGeneration(projectId, latestGen.id).catch(() => null);
+        const count = (genData?.testcases?.results || []).reduce(
+          (n, r) => n + (r.test_cases || []).filter((tc) => tc.needs_review).length, 0
+        );
+        setPendingReviewCount(count);
+      } else {
+        setPendingReviewCount(0);
+      }
     } catch {
       setError("Failed to load project");
     } finally {
@@ -61,7 +75,52 @@ export default function ProjectDetailPage() {
     }
   }, [projectId]);
 
+  const fetchScenarioJobs = useCallback(async () => {
+    const jobs = await listScenarioJobs(projectId).catch(() => null);
+    if (jobs) setScenarioJobs(jobs);
+    return jobs;
+  }, [projectId]);
+
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  useEffect(() => {
+    const hasActiveWork = (jobs, gens) =>
+      jobs?.some((j) => ACTIVE_JOB_STATUSES.includes(j.status)) ||
+      gens?.some((g) => ACTIVE_GEN_STATUSES.includes(g.status));
+
+    const checkOnce = async () => {
+      const [jobs, gens] = await Promise.all([
+        fetchScenarioJobs(),
+        listGenerations(projectId).catch(() => null),
+      ]);
+      if (gens) setGenerations(gens);
+      return { jobs, gens };
+    };
+
+    checkOnce().then(({ jobs, gens }) => {
+      if (hasActiveWork(jobs, gens)) {
+        jobsPollRef.current = setInterval(async () => {
+          const updated = await checkOnce();
+          if (!hasActiveWork(updated.jobs, updated.gens)) {
+            clearInterval(jobsPollRef.current);
+            fetchAll();
+          }
+        }, 3000);
+      }
+    });
+    return () => clearInterval(jobsPollRef.current);
+  }, [fetchScenarioJobs, fetchAll, projectId]);
+
+  const handleStopScenarioJob = async (jobId) => {
+    await stopScenarioJob(projectId, jobId).catch(() => {});
+    fetchScenarioJobs();
+  };
+
+  const handleStopGenerationJob = async (genJobId) => {
+    await stopGeneration(projectId, genJobId).catch(() => {});
+    const updated = await listGenerations(projectId).catch(() => null);
+    if (updated) setGenerations(updated);
+  };
 
   const handleUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -109,54 +168,34 @@ export default function ProjectDetailPage() {
   };
 
   const handleViewTestCases = () => {
-    const latestGen = generations.find((g) => ["REVIEW", "APPROVED"].includes(g.status));
-    if (latestGen) nav(`/projects/${projectId}/generations/${latestGen.id}`);
-  };
-
-  const handleOpenRegenerate = async () => {
-    setRegenOpen(true);
-    setRegenLoading(true);
-    try {
-      // Get endpoint list from the most recent generation that has test cases
-      const latestGen = generations.find((g) => ["REVIEW", "APPROVED"].includes(g.status));
-      if (latestGen) {
-        const genData = await getGeneration(projectId, latestGen.id);
-        const endpoints = (genData.testcases?.results || []).map((r) => ({
-          endpoint: r.endpoint,
-          method: r.method,
-        }));
-        setRegenEndpoints(endpoints);
-      }
-    } catch {
-      setError("Failed to load endpoint list");
-      setRegenOpen(false);
-    } finally {
-      setRegenLoading(false);
-    }
-  };
-
-  const handleRegenerateConfirm = async (endpointsToRegenerate) => {
-    setRegenOpen(false);
-    try {
-      setGenerating(true);
-      setError("");
-      // null means regenerate all; array means regenerate subset
-      const body = endpointsToRegenerate !== null ? { endpoints_to_regenerate: endpointsToRegenerate } : {};
-      const res = await triggerGeneration(projectId, body);
-      if (!res?.generation_id) throw new Error("Invalid response from server");
-      nav(`/projects/${projectId}/generations/${res.generation_id}`);
-    } catch (err) {
-      setError(err.response?.data?.error || err.message || "Failed to trigger regeneration");
-      setGenerating(false);
-    }
+    // Most recent generation regardless of status - listGenerations already
+    // returns them sorted by created_at desc - so this always has somewhere
+    // to go as soon as one generation exists, not just REVIEW/APPROVED ones.
+    if (generations[0]) nav(`/projects/${projectId}/generations/${generations[0].id}`);
   };
 
   if (loading) return <Box sx={{ display: "flex", justifyContent: "center", mt: 8 }}><CircularProgress /></Box>;
   if (!project) return <Alert severity="error">Project not found</Alert>;
 
   const swagger = project.swagger;
-  const hasTestCases = generations.some((g) => ["REVIEW", "APPROVED"].includes(g.status));
-  const activeGen = generations.find((g) => ["PENDING", "GENERATING"].includes(g.status));
+  const hasAnyGeneration = generations.length > 0;
+  const activeGen = generations.find((g) => ACTIVE_GEN_STATUSES.includes(g.status));
+
+  const genRows = generations.map((g) => ({ kind: "generation", id: g.id, status: g.status, created_at: g.created_at }));
+  const scenarioRows = scenarioJobs.map((j) => ({ kind: "scenario", id: j.id, status: j.status, created_at: j.created_at, job: j }));
+  const sortByCreatedDesc = (a, b) => (b.created_at || "").localeCompare(a.created_at || "");
+
+  const activeQueueRows = [
+    ...genRows.filter((r) => ACTIVE_GEN_STATUSES.includes(r.status)),
+    ...scenarioRows.filter((r) => ACTIVE_JOB_STATUSES.includes(r.status)),
+  ].sort(sortByCreatedDesc);
+
+  const completedQueueRows = [
+    ...genRows.filter((r) => !ACTIVE_GEN_STATUSES.includes(r.status)),
+    ...scenarioRows.filter((r) => ["DONE", "FAILED", "CANCELLED"].includes(r.status)),
+  ].sort(sortByCreatedDesc);
+
+  const completedJobsTargetGenId = generations.find((g) => ["REVIEW", "APPROVED", "STOPPED"].includes(g.status))?.id;
 
   return (
     <Box>
@@ -205,15 +244,17 @@ export default function ProjectDetailPage() {
                 </Box>
               </>
             )}
-            {swagger && !hasTestCases && !activeGen && !generating && isAdmin && (
+            {swagger && !hasAnyGeneration && !activeGen && !generating && isAdmin && (
               <Button variant="contained" size="small" startIcon={<PlayArrowIcon />} onClick={handleGenerate}>
                 Generate Test Cases
               </Button>
             )}
-            {swagger && hasTestCases && (
-              <Button variant="outlined" size="small" startIcon={<OpenInNewIcon />} onClick={handleViewTestCases}>
-                View Test Cases
-              </Button>
+            {swagger && hasAnyGeneration && (
+              <Badge badgeContent={pendingReviewCount} color="warning" max={99}>
+                <Button variant="outlined" size="small" startIcon={<OpenInNewIcon />} onClick={handleViewTestCases}>
+                  View Test Cases
+                </Button>
+              </Badge>
             )}
             {swagger && (activeGen || generating) && (
               <Button
@@ -223,11 +264,6 @@ export default function ProjectDetailPage() {
                 disabled={!activeGen}
               >
                 View Progress
-              </Button>
-            )}
-            {swagger && hasTestCases && isAdmin && !activeGen && !generating && (
-              <Button variant="contained" color="warning" size="small" startIcon={<RefreshIcon />} onClick={handleOpenRegenerate}>
-                Regenerate Test Cases
               </Button>
             )}
             </Box>
@@ -306,6 +342,131 @@ export default function ProjectDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Active queue: currently queued/running full-generation runs + scenario jobs */}
+      {activeQueueRows.length > 0 && (
+        <Card sx={{ mt: 3 }}>
+          <CardContent>
+            <Typography variant="h6" fontWeight={600} gutterBottom>Job Queue</Typography>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Type</TableCell>
+                  <TableCell>Endpoint</TableCell>
+                  <TableCell>Scenario</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Result</TableCell>
+                  <TableCell align="right">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {activeQueueRows.map((row) =>
+                  row.kind === "generation" ? (
+                    <TableRow key={`gen-${row.id}`} hover>
+                      <TableCell>Full Generation</TableCell>
+                      <TableCell sx={{ fontFamily: "monospace", fontSize: 12 }}>All endpoints</TableCell>
+                      <TableCell>—</TableCell>
+                      <TableCell><StatusChip status={row.status} /></TableCell>
+                      <TableCell>
+                        <Button size="small" onClick={() => nav(`/projects/${projectId}/generations/${row.id}`)}>
+                          View Progress
+                        </Button>
+                      </TableCell>
+                      <TableCell align="right">
+                        {isAdmin && (
+                          <Tooltip title="Stop this generation">
+                            <IconButton size="small" color="error" onClick={() => handleStopGenerationJob(row.id)}>
+                              <StopIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    <TableRow key={`job-${row.id}`} hover>
+                      <TableCell>Scenario</TableCell>
+                      <TableCell sx={{ fontFamily: "monospace", fontSize: 12 }}>
+                        {row.job.method} {row.job.endpoint}
+                      </TableCell>
+                      <TableCell sx={{ maxWidth: 320, overflowWrap: "break-word" }}>{row.job.scenario}</TableCell>
+                      <TableCell><StatusChip status={row.job.status} /></TableCell>
+                      <TableCell>—</TableCell>
+                      <TableCell align="right">
+                        {isAdmin && (
+                          <Tooltip title="Stop this job">
+                            <IconButton size="small" color="error" onClick={() => handleStopScenarioJob(row.job.id)}>
+                              <StopIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  )
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Completed jobs: glance-only history, capped to the 10 most recent */}
+      {completedQueueRows.length > 0 && (
+        <Card sx={{ mt: 3 }}>
+          <CardContent>
+            <Typography variant="h6" fontWeight={600} gutterBottom>Completed Jobs Queue</Typography>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Type</TableCell>
+                  <TableCell>Endpoint</TableCell>
+                  <TableCell>Scenario</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Result</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {completedQueueRows.slice(0, 10).map((row) =>
+                  row.kind === "generation" ? (
+                    <TableRow key={`gen-${row.id}`} hover>
+                      <TableCell>Full Generation</TableCell>
+                      <TableCell sx={{ fontFamily: "monospace", fontSize: 12 }}>All endpoints</TableCell>
+                      <TableCell>—</TableCell>
+                      <TableCell><StatusChip status={row.status} /></TableCell>
+                      <TableCell>—</TableCell>
+                    </TableRow>
+                  ) : (
+                    <TableRow key={`job-${row.id}`} hover>
+                      <TableCell>Scenario</TableCell>
+                      <TableCell sx={{ fontFamily: "monospace", fontSize: 12 }}>
+                        {row.job.method} {row.job.endpoint}
+                      </TableCell>
+                      <TableCell sx={{ maxWidth: 320, overflowWrap: "break-word" }}>{row.job.scenario}</TableCell>
+                      <TableCell><StatusChip status={row.job.status} /></TableCell>
+                      <TableCell>
+                        {row.job.status === "DONE" && (
+                          <Typography variant="caption" sx={{ fontFamily: "monospace" }}>{row.job.tc_id}</Typography>
+                        )}
+                        {row.job.status === "FAILED" && (
+                          <Typography variant="caption" color="error">{row.job.error}</Typography>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  )
+                )}
+              </TableBody>
+            </Table>
+            {completedQueueRows.length > 10 && completedJobsTargetGenId && (
+              <Button
+                size="small"
+                sx={{ mt: 1 }}
+                onClick={() => nav(`/projects/${projectId}/generations/${completedJobsTargetGenId}?jobsTab=completed`)}
+              >
+                View More
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <Dialog
         open={urlDialogOpen}
         onClose={() => { setUrlDialogOpen(false); setSwaggerUrl(""); }}
@@ -339,14 +500,6 @@ export default function ProjectDetailPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
-      <RegenerateDialog
-        open={regenOpen}
-        endpoints={regenEndpoints}
-        loading={regenLoading}
-        onClose={() => setRegenOpen(false)}
-        onConfirm={handleRegenerateConfirm}
-      />
     </Box>
   );
 }

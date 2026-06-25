@@ -6,6 +6,10 @@ const STATUS_CONFIG = {
   REVIEW:     { color: "info",     label: "Ready for Review" },
   APPROVED:   { color: "success",  label: "Approved" },
   FAILED:     { color: "error",    label: "Failed" },
+  STOPPED:    { color: "default",  label: "Stopped" },
+  QUEUED:     { color: "default",  label: "Queued" },
+  CANCELLED:  { color: "default",  label: "Cancelled" },
+  DONE:       { color: "success",  label: "Done" },
   RUNNING:    { color: "warning",  label: "Running" },
   COMPLETED:  { color: "success",  label: "Completed" },
 };
