@@ -16,6 +16,11 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SearchIcon from "@mui/icons-material/Search";
+import ScienceIcon from "@mui/icons-material/Science";
+import FlagIcon from "@mui/icons-material/Flag";
+import PendingActionsIcon from "@mui/icons-material/PendingActions";
+import DoneAllIcon from "@mui/icons-material/DoneAll";
+import DnsIcon from "@mui/icons-material/Dns";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   getGeneration, editTestCase, deleteTestCase, approveGeneration, approveTestCase,
@@ -385,9 +390,19 @@ export default function GenerationPage() {
       {/* Review / Approved / Stopped — test cases */}
       {gen && ["REVIEW", "APPROVED", "STOPPED"].includes(gen.status) && (
         <>
-          <Tabs value={mainTab} onChange={(_, v) => setMainTab(v)} sx={{ mb: 2 }}>
-            <Tab label={`Testcases (${approvedTc})`} value="all" />
+          <Tabs
+            value={mainTab}
+            onChange={(_, v) => setMainTab(v)}
+            sx={{
+              mb: 2,
+              minHeight: 40,
+              "& .MuiTab-root": { minHeight: 36, py: 0.5, px: 1.5 },
+            }}
+          >
+            <Tab icon={<ScienceIcon fontSize="small" />} iconPosition="start" label={`Testcases (${approvedTc})`} value="all" />
             <Tab
+              icon={<FlagIcon fontSize="small" />}
+              iconPosition="start"
               label={
                 <Badge badgeContent={needsReviewCount} color="warning" max={99}>
                   <Box sx={{ pr: needsReviewCount > 0 ? 1.5 : 0 }}>Needs Review</Box>
@@ -395,9 +410,9 @@ export default function GenerationPage() {
               }
               value="needs_review"
             />
-            <Tab label={`Job Queue (${activeJobs.length})`} value="active" />
-            <Tab label={`Completed Jobs (${completedJobs.length})`} value="completed" />
-            <Tab label="Environments" value="environments" />
+            <Tab icon={<PendingActionsIcon fontSize="small" />} iconPosition="start" label={`Job Queue (${activeJobs.length})`} value="active" />
+            <Tab icon={<DoneAllIcon fontSize="small" />} iconPosition="start" label={`Completed Jobs (${completedJobs.length})`} value="completed" />
+            <Tab icon={<DnsIcon fontSize="small" />} iconPosition="start" label="Environments" value="environments" />
           </Tabs>
 
           {mainTab === "needs_review" && results.every((r) => !(r.test_cases || []).some((tc) => tc.needs_review)) && (
@@ -545,26 +560,28 @@ export default function GenerationPage() {
               ) : (
                 <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
                   {environments.map((env) => (
-                    <Card key={env.id} sx={{ width: 280, height: 210, flex: "0 0 280px", display: "flex", flexDirection: "column" }}>
-                      <CardContent sx={{ flex: 1, overflow: "hidden" }}>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-                          <Typography variant="h6" fontWeight={600} noWrap sx={{ flex: 1 }}>{env.name}</Typography>
+                    <Card key={env.id} sx={{ width: 220, height: 160, flex: "0 0 220px", display: "flex", flexDirection: "column" }}>
+                      <CardContent sx={{ flex: 1, overflow: "hidden", p: 1.5 }}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+                          <Typography variant="subtitle1" fontWeight={600} noWrap sx={{ flex: 1 }}>{env.name}</Typography>
                         </Box>
+                        <Tooltip title={env.url}>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            noWrap
+                            sx={{ fontFamily: "monospace", display: "block", mb: 1 }}
+                          >
+                            {env.url}
+                          </Typography>
+                        </Tooltip>
                         <Chip
                           label={env.source === "manual" ? "Manual" : "From Spec"}
                           size="small"
                           variant="outlined"
-                          sx={{ mb: 1.5 }}
                         />
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ fontFamily: "monospace", overflowWrap: "break-word" }}
-                        >
-                          {env.url}
-                        </Typography>
                       </CardContent>
-                      <CardActions sx={{ px: 2, pb: 2, pt: 0, justifyContent: "flex-end" }}>
+                      <CardActions sx={{ px: 1.5, pb: 1, pt: 0, justifyContent: "flex-end" }}>
                         <Tooltip title="Rename environment">
                           <IconButton size="small" onClick={() => handleOpenEnvEdit(env)}>
                             <EditIcon fontSize="small" />
