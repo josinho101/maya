@@ -198,6 +198,9 @@ export default function ExecutionCharts({ executions, projectId }) {
     <>
       {hasTrendData ? (
         <Box sx={{ display: "flex", gap: 2, mb: 2, width: "100%" }}>
+          {/* Reserved for upcoming tiles */}
+          <Box sx={{ flex: 1, minWidth: 0 }} />
+
           {/* Pass / Fail chart */}
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Card sx={{ height: "100%" }}>
@@ -238,39 +241,6 @@ export default function ExecutionCharts({ executions, projectId }) {
               </CardContent>
             </Card>
           </Box>
-
-          {/* Duration chart */}
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Card sx={{ height: "100%" }}>
-              <CardContent>
-                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                  Total Execution Duration ({unit})
-                </Typography>
-                <ResponsiveContainer width="100%" height={260}>
-                  <LineChart data={chartData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} />
-                    <XAxis dataKey="idx" tickFormatter={dateLabel} {...AXIS_PROPS} />
-                    <YAxis width={useMs ? 62 : 50} unit={unit} {...AXIS_PROPS} />
-                    <Tooltip
-                      contentStyle={TOOLTIP_STYLE}
-                      labelFormatter={dateLabel}
-                      formatter={(v) => [`${v}${unit}`, "Duration"]}
-                    />
-                    <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
-                    <Line
-                      type="monotone"
-                      dataKey="duration"
-                      name={`Duration (${unit})`}
-                      stroke={COLORS.duration}
-                      strokeWidth={2}
-                      dot={{ r: 4, fill: COLORS.duration }}
-                      activeDot={{ r: 6 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </Box>
         </Box>
       ) : (
         <Card sx={{ mb: 2 }}>
@@ -285,65 +255,107 @@ export default function ExecutionCharts({ executions, projectId }) {
         </Card>
       )}
 
-      {endpoints.length > 0 && (
-        <Card sx={{ mb: 2, width: "100%" }}>
-          <CardContent>
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                mb: 1,
-                flexWrap: "wrap",
-                gap: 1,
-              }}
-            >
-              <Typography variant="subtitle1" fontWeight={600}>
-                API Performance by Endpoint
-              </Typography>
-              <Select
-                size="small"
-                value={selectedEndpoint}
-                onChange={(e) => setSelectedEndpoint(e.target.value)}
-                sx={{ minWidth: 220, fontSize: 13, "& .MuiSelect-select": { py: 0.5 } }}
-              >
-                {endpoints.map((ep) => (
-                  <MenuItem key={ep} value={ep} sx={{ fontSize: 13 }}>
-                    {ep}
-                  </MenuItem>
-                ))}
-              </Select>
+      {(hasTrendData || endpoints.length > 0) && (
+        <Box sx={{ display: "flex", gap: 2, mb: 2, width: "100%" }}>
+          {/* Duration chart */}
+          {hasTrendData && (
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Card sx={{ height: "100%" }}>
+                <CardContent>
+                  <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                    Total Execution Duration ({unit})
+                  </Typography>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <LineChart data={chartData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} />
+                      <XAxis dataKey="idx" tickFormatter={dateLabel} {...AXIS_PROPS} />
+                      <YAxis width={useMs ? 62 : 50} unit={unit} {...AXIS_PROPS} />
+                      <Tooltip
+                        contentStyle={TOOLTIP_STYLE}
+                        labelFormatter={dateLabel}
+                        formatter={(v) => [`${v}${unit}`, "Duration"]}
+                      />
+                      <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                      <Line
+                        type="monotone"
+                        dataKey="duration"
+                        name={`Duration (${unit})`}
+                        stroke={COLORS.duration}
+                        strokeWidth={2}
+                        dot={{ r: 4, fill: COLORS.duration }}
+                        activeDot={{ r: 6 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
             </Box>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={endpointData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} />
-                <XAxis
-                  dataKey="idx"
-                  type="number"
-                  domain={["dataMin", "dataMax"]}
-                  tickFormatter={endpointDateLabel}
-                  {...AXIS_PROPS}
-                />
-                <YAxis width={50} unit="ms" {...AXIS_PROPS} />
-                <Tooltip
-                  contentStyle={TOOLTIP_STYLE}
-                  labelFormatter={endpointDateLabel}
-                  formatter={(v) => [`${v}ms`, "Execution Time"]}
-                />
-                <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
-                <Line
-                  type="monotone"
-                  dataKey="ms"
-                  name="Execution Time (ms)"
-                  stroke={COLORS.endpoint}
-                  strokeWidth={2}
-                  dot={{ r: 4, fill: COLORS.endpoint }}
-                  activeDot={{ r: 6 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+          )}
+
+          {/* API Performance by Endpoint */}
+          {endpoints.length > 0 && (
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Card sx={{ height: "100%" }}>
+                <CardContent>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      mb: 1,
+                      flexWrap: "wrap",
+                      gap: 1,
+                    }}
+                  >
+                    <Typography variant="subtitle1" fontWeight={600}>
+                      API Performance by Endpoint
+                    </Typography>
+                    <Select
+                      size="small"
+                      value={selectedEndpoint}
+                      onChange={(e) => setSelectedEndpoint(e.target.value)}
+                      sx={{ minWidth: 220, fontSize: 13, "& .MuiSelect-select": { py: 0.5 } }}
+                    >
+                      {endpoints.map((ep) => (
+                        <MenuItem key={ep} value={ep} sx={{ fontSize: 13 }}>
+                          {ep}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </Box>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <LineChart data={endpointData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} />
+                      <XAxis
+                        dataKey="idx"
+                        type="number"
+                        domain={["dataMin", "dataMax"]}
+                        tickFormatter={endpointDateLabel}
+                        {...AXIS_PROPS}
+                      />
+                      <YAxis width={50} unit="ms" {...AXIS_PROPS} />
+                      <Tooltip
+                        contentStyle={TOOLTIP_STYLE}
+                        labelFormatter={endpointDateLabel}
+                        formatter={(v) => [`${v}ms`, "Execution Time"]}
+                      />
+                      <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                      <Line
+                        type="monotone"
+                        dataKey="ms"
+                        name="Execution Time (ms)"
+                        stroke={COLORS.endpoint}
+                        strokeWidth={2}
+                        dot={{ r: 4, fill: COLORS.endpoint }}
+                        activeDot={{ r: 6 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </Box>
+          )}
+        </Box>
       )}
     </>
   );

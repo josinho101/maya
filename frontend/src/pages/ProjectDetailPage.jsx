@@ -226,13 +226,6 @@ export default function ProjectDetailPage() {
     ...scenarioRows.filter((r) => ACTIVE_JOB_STATUSES.includes(r.status)),
   ].sort(sortByCreatedDesc);
 
-  const completedQueueRows = [
-    ...genRows.filter((r) => !ACTIVE_GEN_STATUSES.includes(r.status)),
-    ...scenarioRows.filter((r) => ["DONE", "FAILED", "CANCELLED"].includes(r.status)),
-  ].sort(sortByCreatedDesc);
-
-  const completedJobsTargetGenId = generations.find((g) => ["REVIEW", "APPROVED", "STOPPED"].includes(g.status))?.id;
-
   const filteredExecutions = environments.length > 0
     ? executions.filter((e) => e.environment_id === selectedEnvId)
     : executions;
@@ -471,65 +464,6 @@ export default function ProjectDetailPage() {
                 )}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Completed jobs: glance-only history, capped to the 10 most recent */}
-      {completedQueueRows.length > 0 && (
-        <Card sx={{ mt: 3 }}>
-          <CardContent>
-            <Typography variant="h6" fontWeight={600} gutterBottom>Completed Jobs Queue</Typography>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Type</TableCell>
-                  <TableCell>Endpoint</TableCell>
-                  <TableCell>Scenario</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Result</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {completedQueueRows.slice(0, 10).map((row) =>
-                  row.kind === "generation" ? (
-                    <TableRow key={`gen-${row.id}`} hover>
-                      <TableCell>Full Generation</TableCell>
-                      <TableCell sx={{ fontFamily: "monospace", fontSize: 12 }}>All endpoints</TableCell>
-                      <TableCell>—</TableCell>
-                      <TableCell><StatusChip status={row.status} /></TableCell>
-                      <TableCell>—</TableCell>
-                    </TableRow>
-                  ) : (
-                    <TableRow key={`job-${row.id}`} hover>
-                      <TableCell>Scenario</TableCell>
-                      <TableCell sx={{ fontFamily: "monospace", fontSize: 12 }}>
-                        {row.job.method} {row.job.endpoint}
-                      </TableCell>
-                      <TableCell sx={{ maxWidth: 320, overflowWrap: "break-word" }}>{row.job.scenario}</TableCell>
-                      <TableCell><StatusChip status={row.job.status} /></TableCell>
-                      <TableCell>
-                        {row.job.status === "DONE" && (
-                          <Typography variant="caption" sx={{ fontFamily: "monospace" }}>{row.job.tc_id}</Typography>
-                        )}
-                        {row.job.status === "FAILED" && (
-                          <Typography variant="caption" color="error">{row.job.error}</Typography>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  )
-                )}
-              </TableBody>
-            </Table>
-            {completedQueueRows.length > 10 && completedJobsTargetGenId && (
-              <Button
-                size="small"
-                sx={{ mt: 1 }}
-                onClick={() => nav(`/projects/${projectId}/generations/${completedJobsTargetGenId}?jobsTab=completed`)}
-              >
-                View More
-              </Button>
-            )}
           </CardContent>
         </Card>
       )}
