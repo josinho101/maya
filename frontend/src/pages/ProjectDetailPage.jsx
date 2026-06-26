@@ -3,7 +3,7 @@ import {
   Box, Typography, Button, ButtonGroup, Card, CardContent, CircularProgress,
   Alert, Chip, Table, TableBody, TableCell, TableHead, TableRow,
   IconButton, Tooltip, LinearProgress, Badge,
-  Dialog, DialogTitle, DialogContent, DialogActions, TextField,
+  Dialog, DialogContent, DialogActions, TextField,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
@@ -20,6 +20,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import StatusChip from "../components/StatusChip";
 import ExecutionCharts from "../components/ExecutionCharts";
+import ClosableDialogTitle from "../components/ClosableDialogTitle";
 
 const ACTIVE_JOB_STATUSES = ["QUEUED", "RUNNING"];
 const ACTIVE_GEN_STATUSES = ["PENDING", "GENERATING"];
@@ -473,7 +474,9 @@ export default function ProjectDetailPage() {
         fullWidth
         maxWidth="sm"
       >
-        <DialogTitle>Import from URL</DialogTitle>
+        <ClosableDialogTitle onClose={() => { setUrlDialogOpen(false); setSwaggerUrl(""); }}>
+          Import from URL
+        </ClosableDialogTitle>
         <DialogContent>
           <TextField
             autoFocus
@@ -487,7 +490,7 @@ export default function ProjectDetailPage() {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => { setUrlDialogOpen(false); setSwaggerUrl(""); }}>
+          <Button variant="outlined" onClick={() => { setUrlDialogOpen(false); setSwaggerUrl(""); }}>
             Cancel
           </Button>
           <Button

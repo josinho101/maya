@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import {
   Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogActions,
-  DialogContent, DialogTitle, Divider, FormControlLabel, List, ListItem,
+  DialogContent, Divider, FormControlLabel, List, ListItem,
   Alert,
 } from "@mui/material";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import ClosableDialogTitle from "./ClosableDialogTitle";
 
 const METHOD_COLOR = { GET: "info", POST: "success", PUT: "warning", PATCH: "warning", DELETE: "error" };
 
@@ -41,10 +42,10 @@ export default function RegenerateDialog({ open, endpoints, loading, onClose, on
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+      <ClosableDialogTitle onClose={onClose} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
         <RefreshIcon color="warning" />
         Regenerate Test Cases
-      </DialogTitle>
+      </ClosableDialogTitle>
       <DialogContent>
         <Alert severity="warning" icon={<WarningAmberIcon />} sx={{ mb: 2 }}>
           Previously generated test cases will be cleared for the selected endpoints.
@@ -100,10 +101,10 @@ export default function RegenerateDialog({ open, endpoints, loading, onClose, on
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="outlined" onClick={onClose}>Cancel</Button>
         <Button
           variant="contained"
-          color="warning"
+          color="primary"
           startIcon={<RefreshIcon />}
           onClick={handleConfirm}
           disabled={loading || noneChecked}

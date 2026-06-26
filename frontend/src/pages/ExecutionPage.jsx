@@ -4,7 +4,7 @@ import {
   LinearProgress, Grid, Divider, Chip, List, ListItemButton, ListItemText,
   ListItemIcon, Tooltip, Accordion, AccordionSummary, AccordionDetails,
   Table, TableHead, TableRow, TableCell, TableBody, IconButton,
-  TextField, InputAdornment, Dialog, DialogTitle, DialogContent, DialogActions,
+  TextField, InputAdornment, Dialog, DialogContent, DialogActions,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -24,6 +24,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import StatusChip from "../components/StatusChip";
 import EditTestCaseDialog from "../components/EditTestCaseDialog";
+import ClosableDialogTitle from "../components/ClosableDialogTitle";
 
 const POLLING_STATUSES = ["PENDING", "RUNNING"];
 const METHOD_COLOR = { GET: "info", POST: "success", PUT: "warning", PATCH: "warning", DELETE: "error" };
@@ -411,12 +412,12 @@ function ExecutionPageInner() {
       />
 
       <Dialog open={!!deleteTc} onClose={() => setDeleteTc(null)}>
-        <DialogTitle>Delete Test Case</DialogTitle>
+        <ClosableDialogTitle onClose={() => setDeleteTc(null)}>Delete Test Case</ClosableDialogTitle>
         <DialogContent>
           <Typography>Delete <strong>{deleteTc?.tc_id}</strong>? This cannot be undone.</Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteTc(null)}>Cancel</Button>
+          <Button variant="outlined" onClick={() => setDeleteTc(null)}>Cancel</Button>
           <Button variant="contained" color="error" onClick={handleDelete}>Delete</Button>
         </DialogActions>
       </Dialog>

@@ -1,10 +1,11 @@
 import { useState } from "react";
 import {
-  Box, Button, CircularProgress, Alert, Dialog, DialogTitle,
+  Box, Button, CircularProgress, Alert, Dialog,
   DialogContent, DialogActions, TextField, MenuItem, Tabs, Tab,
 } from "@mui/material";
 import { JsonField } from "./EditTestCaseDialog";
 import FileFieldEditor from "./FileFieldEditor";
+import ClosableDialogTitle from "./ClosableDialogTitle";
 import { addTestCase, getTestcaseSample, submitScenarioJob } from "../api/client";
 
 const LIFECYCLE_ROLES = ["independent", "create", "read", "update", "delete"];
@@ -111,7 +112,7 @@ export default function AddTestCaseDialog({ open, projectId, genId, results, onC
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-      <DialogTitle>Add Test Case</DialogTitle>
+      <ClosableDialogTitle onClose={handleClose}>Add Test Case</ClosableDialogTitle>
       <DialogContent>
         {err && <Alert severity="error" sx={{ mb: 2 }}>{err}</Alert>}
 
@@ -193,13 +194,13 @@ export default function AddTestCaseDialog({ open, projectId, genId, results, onC
               onChange={setScenarioFiles}
             />
             <Alert severity="info" sx={{ mt: 1 }}>
-              This testcase generation request will be queued. Once it finishes, it'll show up in the "Needs Review" tab where you can approve or edit it.
+              This testcase generation request will be queued. Once it finishes, it'll show up in the "Needs Review" tab where you can approve, edit or delete it.
             </Alert>
           </>
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>Close</Button>
+        <Button variant="outlined" onClick={handleClose}>Close</Button>
         {target && tab === "manual" && (
           <Button variant="contained" onClick={handleSaveManual} disabled={saving || loadingSample}>
             {saving ? <CircularProgress size={20} /> : "Save"}
@@ -211,7 +212,7 @@ export default function AddTestCaseDialog({ open, projectId, genId, results, onC
             onClick={handleQueueScenario}
             disabled={queueing || loadingSample || !scenarioText.trim()}
           >
-            {queueing ? <CircularProgress size={20} /> : "Submit Scenario"}
+            {queueing ? <CircularProgress size={20} /> : "Submit"}
           </Button>
         )}
       </DialogActions>

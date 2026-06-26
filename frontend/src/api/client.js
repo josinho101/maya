@@ -73,6 +73,8 @@ export const uploadTestcaseFile = (id, gid, file) => {
     .post(`/projects/${id}/generations/${gid}/testcase-files`, form)
     .then((r) => r.data);
 };
+export const listTestcaseFiles = (id, gid) =>
+  api.get(`/projects/${id}/generations/${gid}/testcase-files`).then((r) => r.data);
 
 // Scenario-based generation (queued jobs)
 export const submitScenarioJob = (id, gid, body) =>

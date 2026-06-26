@@ -77,6 +77,12 @@ def upload_testcase_file(project_id, gen_id):
     return jsonify(generations_controller.upload_testcase_file(project_id, gen_id, file_storage)), 201
 
 
+@bp.get("/projects/<project_id>/generations/<gen_id>/testcase-files")
+@require_admin
+def list_testcase_files(project_id, gen_id):
+    return jsonify(generations_controller.list_testcase_files(project_id, gen_id))
+
+
 @bp.post("/projects/<project_id>/generations/<gen_id>/stop")
 @require_admin
 def stop_generation(project_id, gen_id):

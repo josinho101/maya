@@ -413,6 +413,35 @@ def upload_testcase_file(project_id, gen_id, file_storage):
     return {"path": stored_path}
 
 
+def list_testcase_files(project_id, gen_id):
+    p, gen = _get_project_and_generation(project_id, gen_id)
+
+    if not gen.get("output_dir"):
+        return []
+
+    upload_dir = os.path.join(gen["output_dir"], "uploads")
+    if not os.path.isdir(upload_dir):
+        return []
+
+    files = []
+    for stored_name in os.listdir(upload_dir):
+        stored_path = os.path.abspath(os.path.join(upload_dir, stored_name))
+        if not os.path.isfile(stored_path):
+            continue
+        # Stored as "{8 hex chars}_{original filename}" (see upload_testcase_file).
+        display_name = stored_name[9:] if len(stored_name) > 9 and stored_name[8] == "_" else stored_name
+        stat = os.stat(stored_path)
+        files.append({
+            "path": stored_path,
+            "name": display_name,
+            "size": stat.st_size,
+            "uploaded_at": datetime.fromtimestamp(stat.st_mtime, timezone.utc).isoformat(),
+        })
+
+    files.sort(key=lambda f: f["uploaded_at"], reverse=True)
+    return files
+
+
 def request_stop_generation(project_id, gen_id):
     p, gen = _get_project_and_generation(project_id, gen_id)
 

@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import {
-  Box, Button, CircularProgress, Alert, Dialog, DialogTitle,
+  Box, Button, CircularProgress, Alert, Dialog,
   DialogContent, DialogActions, TextField, Chip,
 } from "@mui/material";
 import FileFieldEditor from "./FileFieldEditor";
+import ClosableDialogTitle from "./ClosableDialogTitle";
 import { getTestcaseSample } from "../api/client";
 
 const LIFECYCLE_ROLE_COLOR = {
@@ -73,14 +74,14 @@ export default function EditTestCaseDialog({ open, tc, endpoint, method, project
   if (tc && form.tc_id !== tc.tc_id) return null;
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+      <ClosableDialogTitle onClose={onClose} sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
         Edit Test Case — {form.tc_id}
         <Chip
           label={form.lifecycle_role || "independent"}
           size="small"
           color={LIFECYCLE_ROLE_COLOR[form.lifecycle_role] || "default"}
         />
-      </DialogTitle>
+      </ClosableDialogTitle>
       <DialogContent>
         {err && <Alert severity="error" sx={{ mb: 2 }}>{err}</Alert>}
         <TextField
@@ -105,7 +106,7 @@ export default function EditTestCaseDialog({ open, tc, endpoint, method, project
           onChange={(v) => setForm({ ...form, expected_response: v })} />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="outlined" onClick={onClose}>Cancel</Button>
         <Button variant="contained" onClick={handleSave} disabled={saving}>
           {saving ? <CircularProgress size={20} /> : "Save"}
         </Button>

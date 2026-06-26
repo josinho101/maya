@@ -3,7 +3,7 @@ import {
   Box, Typography, Button, Card, CardContent, CircularProgress, Alert,
   Accordion, AccordionSummary, AccordionDetails, Table, TableBody,
   TableCell, TableHead, TableRow, IconButton, LinearProgress, Chip, Tooltip,
-  TextField, InputAdornment, Dialog, DialogTitle, DialogContent, DialogActions,
+  TextField, InputAdornment, Dialog, DialogContent, DialogActions,
   Tabs, Tab, Badge,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -26,6 +26,7 @@ import StatusChip from "../components/StatusChip";
 import EditTestCaseDialog from "../components/EditTestCaseDialog";
 import AddTestCaseDialog from "../components/AddTestCaseDialog";
 import RegenerateDialog from "../components/RegenerateDialog";
+import ClosableDialogTitle from "../components/ClosableDialogTitle";
 
 const POLLING_STATUSES = ["PENDING", "GENERATING"];
 const ACTIVE_JOB_STATUSES = ["QUEUED", "RUNNING"];
@@ -224,14 +225,15 @@ export default function GenerationPage() {
 
   return (
     <Box>
-      <Button startIcon={<ArrowBackIcon />} onClick={() => nav(`/projects/${projectId}`)} sx={{ mb: 2 }}>
-        Project
-      </Button>
-
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3, flexWrap: "wrap" }}>
-        <Typography variant="h5" fontWeight={700} sx={{ flex: 1 }}>Generation</Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flex: 1 }}>
+          <IconButton size="small" onClick={() => nav(`/projects/${projectId}`)}>
+            <ArrowBackIcon fontSize="small" />
+          </IconButton>
+          <Typography variant="h5" fontWeight={700}>Generation</Typography>
+        </Box>
         {gen && gen.status !== "APPROVED" && <StatusChip status={gen.status} size="medium" />}
         {isAdmin && results.length > 0 && (
           <Button
@@ -239,7 +241,7 @@ export default function GenerationPage() {
             startIcon={<RefreshIcon />}
             onClick={handleOpenRegenerate}
           >
-            Regenerate Test Cases
+            Regenerate
           </Button>
         )}
         {isAdmin && results.length > 0 && (
@@ -248,7 +250,7 @@ export default function GenerationPage() {
             startIcon={<AddIcon />}
             onClick={() => setAddOpen(true)}
           >
-            Add Test Case
+            Add
           </Button>
         )}
       </Box>
@@ -385,7 +387,7 @@ export default function GenerationPage() {
                     onClick={handleExecute}
                     disabled={executing}
                   >
-                    Run Tests
+                    Run
                   </Button>
                 )}
               </Box>
@@ -572,12 +574,12 @@ export default function GenerationPage() {
       />
 
       <Dialog open={!!deleteTc} onClose={() => setDeleteTc(null)}>
-        <DialogTitle>Delete Test Case</DialogTitle>
+        <ClosableDialogTitle onClose={() => setDeleteTc(null)}>Delete Test Case</ClosableDialogTitle>
         <DialogContent>
           <Typography>Delete <strong>{deleteTc?.tc_id}</strong>? This cannot be undone.</Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteTc(null)}>Cancel</Button>
+          <Button variant="outlined" onClick={() => setDeleteTc(null)}>Cancel</Button>
           <Button variant="contained" color="error" onClick={handleDelete}>Delete</Button>
         </DialogActions>
       </Dialog>

@@ -23,6 +23,28 @@ const theme = createTheme({
         root: { backgroundImage: "none" },
       },
     },
+    MuiDialog: {
+      styleOverrides: {
+        paper: { backgroundImage: "none" },
+      },
+    },
+    MuiDialogActions: {
+      styleOverrides: {
+        root: { padding: "16px 24px" },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: "none",
+          fontWeight: 600,
+          paddingLeft: 20,
+          paddingRight: 20,
+        },
+        outlined: { boxShadow: "none" },
+        text: { boxShadow: "none" },
+      },
+    },
   },
 });
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Box, Card, CardContent, CardActions, Typography, Button, Fab,
-  Dialog, DialogTitle, DialogContent, DialogActions, TextField,
+  Dialog, DialogContent, DialogActions, TextField,
   IconButton, CircularProgress, Alert, Tooltip, Chip,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
@@ -12,6 +12,7 @@ import FolderIcon from "@mui/icons-material/Folder";
 import { useNavigate } from "react-router-dom";
 import { getProjects, createProject, updateProject, deleteProject, listGenerations } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import ClosableDialogTitle from "../components/ClosableDialogTitle";
 
 export default function ProjectsPage() {
   const nav = useNavigate();
@@ -190,7 +191,7 @@ export default function ProjectsPage() {
 
       {/* Create dialog */}
       <Dialog open={createOpen} onClose={() => setCreateOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>New Project</DialogTitle>
+        <ClosableDialogTitle onClose={() => setCreateOpen(false)}>New Project</ClosableDialogTitle>
         <DialogContent>
           {formError && <Alert severity="error" sx={{ mb: 2 }}>{formError}</Alert>}
           <TextField
@@ -205,7 +206,7 @@ export default function ProjectsPage() {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => { setCreateOpen(false); setFormError(""); }}>Cancel</Button>
+          <Button variant="outlined" onClick={() => { setCreateOpen(false); setFormError(""); }}>Cancel</Button>
           <Button variant="contained" onClick={handleCreate} disabled={saving}>
             {saving ? <CircularProgress size={20} /> : "Create"}
           </Button>
@@ -214,7 +215,7 @@ export default function ProjectsPage() {
 
       {/* Edit dialog */}
       <Dialog open={!!editTarget} onClose={() => setEditTarget(null)} maxWidth="sm" fullWidth>
-        <DialogTitle>Edit Project</DialogTitle>
+        <ClosableDialogTitle onClose={() => setEditTarget(null)}>Edit Project</ClosableDialogTitle>
         <DialogContent>
           {editError && <Alert severity="error" sx={{ mb: 2 }}>{editError}</Alert>}
           <TextField
@@ -230,7 +231,7 @@ export default function ProjectsPage() {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setEditTarget(null)}>Cancel</Button>
+          <Button variant="outlined" onClick={() => setEditTarget(null)}>Cancel</Button>
           <Button variant="contained" onClick={handleEditSave} disabled={editSaving}>
             {editSaving ? <CircularProgress size={20} /> : "Save"}
           </Button>
@@ -239,7 +240,7 @@ export default function ProjectsPage() {
 
       {/* Delete confirm dialog */}
       <Dialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} maxWidth="xs" fullWidth>
-        <DialogTitle>Delete Project</DialogTitle>
+        <ClosableDialogTitle onClose={() => setDeleteTarget(null)}>Delete Project</ClosableDialogTitle>
         <DialogContent>
           <Typography>
             Delete <strong>{deleteTarget?.name}</strong>? This removes all swagger uploads,
@@ -247,7 +248,7 @@ export default function ProjectsPage() {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteTarget(null)}>Cancel</Button>
+          <Button variant="outlined" onClick={() => setDeleteTarget(null)}>Cancel</Button>
           <Button variant="contained" color="error" onClick={handleDelete}>Delete</Button>
         </DialogActions>
       </Dialog>
