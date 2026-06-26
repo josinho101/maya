@@ -4,6 +4,7 @@ import {
   Alert, Chip, Table, TableBody, TableCell, TableHead, TableRow,
   IconButton, Tooltip, LinearProgress, Badge,
   Dialog, DialogContent, DialogActions, TextField, Select, MenuItem,
+  TablePagination,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
@@ -56,6 +57,10 @@ export default function ProjectDetailPage() {
   const [pendingReviewCount, setPendingReviewCount] = useState(0);
   const [scenarioJobs, setScenarioJobs] = useState([]);
   const jobsPollRef = useRef(null);
+
+  // Executions table pagination
+  const [executionsPage, setExecutionsPage] = useState(0);
+  const EXECUTIONS_PER_PAGE = 7;
 
   const fetchAll = useCallback(async () => {
     try {
@@ -128,6 +133,8 @@ export default function ProjectDetailPage() {
       setSelectedEnvId(environments[0].id);
     }
   }, [environments, selectedEnvId]);
+
+  useEffect(() => { setExecutionsPage(0); }, [executions]);
 
   const handleStopScenarioJob = async (jobId) => {
     await stopScenarioJob(projectId, jobId).catch(() => {});
@@ -229,6 +236,14 @@ export default function ProjectDetailPage() {
   const filteredExecutions = environments.length > 0
     ? executions.filter((e) => e.environment_id === selectedEnvId)
     : executions;
+
+  const sortedExecutions = [...executions].sort(
+    (a, b) => (b.started_at || "").localeCompare(a.started_at || "")
+  );
+  const pagedExecutions = sortedExecutions.slice(
+    executionsPage * EXECUTIONS_PER_PAGE,
+    executionsPage * EXECUTIONS_PER_PAGE + EXECUTIONS_PER_PAGE
+  );
 
   return (
     <Box>
@@ -353,7 +368,7 @@ export default function ProjectDetailPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {executions.map((e) => (
+                {pagedExecutions.map((e) => (
                   <TableRow key={e.id} hover>
                     <TableCell sx={{ fontFamily: "monospace", fontSize: 12 }}>{e.id}</TableCell>
                     <TableCell><StatusChip status={e.status} /></TableCell>
@@ -380,6 +395,16 @@ export default function ProjectDetailPage() {
                 ))}
               </TableBody>
             </Table>
+          )}
+          {executions.length > EXECUTIONS_PER_PAGE && (
+            <TablePagination
+              component="div"
+              count={sortedExecutions.length}
+              page={executionsPage}
+              onPageChange={(_, newPage) => setExecutionsPage(newPage)}
+              rowsPerPage={EXECUTIONS_PER_PAGE}
+              rowsPerPageOptions={[EXECUTIONS_PER_PAGE]}
+            />
           )}
         </CardContent>
       </Card>
