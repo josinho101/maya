@@ -1,7 +1,8 @@
 {
   "project": {
     "name": "",
-    "base_url": ""
+    "base_url": "",
+    "servers": []
   },
   "apis": [
     {

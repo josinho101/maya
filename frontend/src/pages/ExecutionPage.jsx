@@ -115,7 +115,7 @@ function ExecutionPageInner() {
   const handleRerun = async () => {
     try {
       setRerunning(true);
-      const res = await executeGeneration(projectId, exec.generation_id);
+      const res = await executeGeneration(projectId, exec.generation_id, { environment_id: exec.environment_id });
       nav(`/projects/${projectId}/executions/${res.execution_id}`);
     } catch (e) {
       setError(e.response?.data?.error || "Re-run failed");
@@ -143,16 +143,17 @@ function ExecutionPageInner() {
 
   return (
     <Box>
-      <Button startIcon={<ArrowBackIcon />} onClick={() => nav(`/projects/${projectId}`)} sx={{ mb: 2 }}>
-        Project
-      </Button>
-
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       <Box sx={{ display: "flex", gap: 2, mb: 3, alignItems: "center", flexWrap: "wrap" }}>
-        <Typography variant="h5" fontWeight={700} sx={{ flex: 1 }}>Execution</Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flex: 1 }}>
+          <IconButton size="small" onClick={() => nav(`/projects/${projectId}`)}>
+            <ArrowBackIcon fontSize="small" />
+          </IconButton>
+          <Typography variant="h5" fontWeight={700}>Execution</Typography>
+        </Box>
         <Chip label={`ID: ${execId}`} size="small" sx={{ fontFamily: "monospace" }} />
-        {exec && <StatusChip status={exec.status} size="medium" />}
+        {exec?.environment_name && <Chip label={exec.environment_name} size="small" color="secondary" variant="outlined" />}
       </Box>
 
       <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start", flexDirection: { xs: "column", md: "row" } }}>
@@ -380,7 +381,12 @@ function ExecutionPageInner() {
                               )}
                             </Box>
                           }
-                          secondary={new Date(h.started_at).toLocaleString()}
+                          secondary={
+                            <>
+                              {new Date(h.started_at).toLocaleString()}
+                              {h.environment_name && ` · ${h.environment_name}`}
+                            </>
+                          }
                         />
                         {h.status === "COMPLETED" && (
                           <Tooltip title="Open report">

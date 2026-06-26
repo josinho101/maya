@@ -31,6 +31,8 @@ class SwaggerParser:
 
         base_url = ""
 
+        servers_list = []
+
         if "host" in self.source_data:
 
             scheme = self.source_data.get("schemes", ["https"])[0]
@@ -41,13 +43,21 @@ class SwaggerParser:
 
             base_url = f"{scheme}://{host}{base_path}"
 
+            servers_list = [{"url": base_url, "description": ""}]
+
         elif "servers" in self.source_data:
 
             servers = self.source_data.get("servers", [])
 
-            if servers:
+            servers_list = [
+                {"url": s.get("url", ""), "description": s.get("description", "")}
+                for s in servers
+                if s.get("url")
+            ]
 
-                base_url = servers[0].get("url", "")
+            if servers_list:
+
+                base_url = servers_list[0]["url"]
 
         apis = []
 
@@ -225,6 +235,8 @@ class SwaggerParser:
         output["project"]["name"] = project_name
 
         output["project"]["base_url"] = base_url
+
+        output["project"]["servers"] = servers_list
 
         output["apis"] = apis
 

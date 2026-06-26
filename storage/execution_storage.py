@@ -10,7 +10,7 @@ _TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "templates", "execution
 class ExecutionStorage:
 
     @staticmethod
-    def save(project_path, results):
+    def save(project_path, results, environment_name="", environment_url="", project_name=""):
 
         projectName = project_path.split("/")[-1]
         out_dir = f"{PATHS['execution_results']}/{projectName}"
@@ -36,8 +36,8 @@ class ExecutionStorage:
             with open(path, "w", encoding="utf-8") as file:
                 json.dump(results, file, indent=2)
 
-        ExecutionStorage.generate_html_report(results, latest_html_path)
-        ExecutionStorage.generate_html_report(results, history_html_path)
+        ExecutionStorage.generate_html_report(results, latest_html_path, environment_name, environment_url, project_name)
+        ExecutionStorage.generate_html_report(results, history_html_path, environment_name, environment_url, project_name)
 
         return {
             "latest_json_report": latest_json_path,
@@ -47,7 +47,7 @@ class ExecutionStorage:
         }
 
     @staticmethod
-    def generate_html_report(results, html_path):
+    def generate_html_report(results, html_path, environment_name="", environment_url="", project_name=""):
 
         total = len(results)
         passed = len([r for r in results if r.get("status") == "PASS"])
@@ -134,6 +134,13 @@ class ExecutionStorage:
             </tr>
             """
 
+        if environment_name and environment_url:
+            environment_display = f"{environment_name} ({environment_url})"
+        elif environment_url:
+            environment_display = environment_url
+        else:
+            environment_display = "Not specified"
+
         with open(_TEMPLATE_PATH, "r", encoding="utf-8") as f:
             template = Template(f.read())
 
@@ -146,6 +153,8 @@ class ExecutionStorage:
             success_rate=success_rate,
             total_execution_time=total_execution_time,
             generated_on=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            environment_display=environment_display,
+            project_name=project_name or "Not specified",
         )
 
         with open(html_path, "w", encoding="utf-8") as file:

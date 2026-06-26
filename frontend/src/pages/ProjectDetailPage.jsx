@@ -21,6 +21,8 @@ import { useAuth } from "../context/AuthContext";
 import StatusChip from "../components/StatusChip";
 import ExecutionCharts from "../components/ExecutionCharts";
 import ClosableDialogTitle from "../components/ClosableDialogTitle";
+import EnvNamingDialog from "../components/EnvNamingDialog";
+import AddEnvironmentDialog from "../components/AddEnvironmentDialog";
 
 const ACTIVE_JOB_STATUSES = ["QUEUED", "RUNNING"];
 const ACTIVE_GEN_STATUSES = ["PENDING", "GENERATING"];
@@ -42,6 +44,11 @@ export default function ProjectDetailPage() {
   // URL import dialog state
   const [urlDialogOpen, setUrlDialogOpen] = useState(false);
   const [swaggerUrl, setSwaggerUrl] = useState("");
+
+  // Environment naming / creation popups shown right after a swagger upload/import
+  const [envNamingOpen, setEnvNamingOpen] = useState(false);
+  const [pendingEnvironments, setPendingEnvironments] = useState([]);
+  const [addEnvOpen, setAddEnvOpen] = useState(false);
 
   // Pending-review count + scenario jobs panel
   const [pendingReviewCount, setPendingReviewCount] = useState(0);
@@ -123,13 +130,23 @@ export default function ProjectDetailPage() {
     if (updated) setGenerations(updated);
   };
 
+  const handleEnvFlags = (res) => {
+    if (res.needs_env_naming) {
+      setPendingEnvironments(res.environments);
+      setEnvNamingOpen(true);
+    } else if (res.no_servers_found) {
+      setAddEnvOpen(true);
+    }
+  };
+
   const handleUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
       setUploading(true);
       setError("");
-      await uploadSwagger(projectId, file);
+      const res = await uploadSwagger(projectId, file);
+      handleEnvFlags(res);
       fetchAll();
     } catch (err) {
       setError(err.response?.data?.error || "Upload failed");
@@ -144,7 +161,8 @@ export default function ProjectDetailPage() {
     try {
       setUploading(true);
       setError("");
-      await importSwaggerFromUrl(projectId, swaggerUrl.trim());
+      const res = await importSwaggerFromUrl(projectId, swaggerUrl.trim());
+      handleEnvFlags(res);
       setUrlDialogOpen(false);
       setSwaggerUrl("");
       fetchAll();
@@ -305,6 +323,7 @@ export default function ProjectDetailPage() {
                 <TableRow>
                   <TableCell>ID</TableCell>
                   <TableCell>Status</TableCell>
+                  <TableCell>Environment</TableCell>
                   <TableCell>Pass</TableCell>
                   <TableCell>Fail</TableCell>
                   <TableCell>Rate</TableCell>
@@ -317,6 +336,7 @@ export default function ProjectDetailPage() {
                   <TableRow key={e.id} hover>
                     <TableCell sx={{ fontFamily: "monospace", fontSize: 12 }}>{e.id}</TableCell>
                     <TableCell><StatusChip status={e.status} /></TableCell>
+                    <TableCell>{e.environment_name || "—"}</TableCell>
                     <TableCell sx={{ color: "success.main" }}>{e.summary?.passed ?? "—"}</TableCell>
                     <TableCell sx={{ color: "error.main" }}>{e.summary?.failed ?? "—"}</TableCell>
                     <TableCell>
@@ -503,6 +523,22 @@ export default function ProjectDetailPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <EnvNamingDialog
+        open={envNamingOpen}
+        projectId={projectId}
+        environments={pendingEnvironments}
+        onClose={() => setEnvNamingOpen(false)}
+        onSaved={() => { setEnvNamingOpen(false); fetchAll(); }}
+      />
+
+      <AddEnvironmentDialog
+        open={addEnvOpen}
+        projectId={projectId}
+        title="No environment found in this spec — add one to get started"
+        onClose={() => setAddEnvOpen(false)}
+        onCreated={() => { setAddEnvOpen(false); fetchAll(); }}
+      />
     </Box>
   );
 }

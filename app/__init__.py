@@ -22,6 +22,7 @@ def create_app():
     from app.routes.generations import bp as generations_bp
     from app.routes.executions import bp as executions_bp
     from app.routes.scenario_jobs import bp as scenario_jobs_bp
+    from app.routes.environments import bp as environments_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api")
     app.register_blueprint(projects_bp, url_prefix="/api")
@@ -29,6 +30,7 @@ def create_app():
     app.register_blueprint(generations_bp, url_prefix="/api")
     app.register_blueprint(executions_bp, url_prefix="/api")
     app.register_blueprint(scenario_jobs_bp, url_prefix="/api")
+    app.register_blueprint(environments_bp, url_prefix="/api")
 
     from app.services import scenario_job_queue
     scenario_job_queue.start_worker()

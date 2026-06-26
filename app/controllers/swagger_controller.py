@@ -102,8 +102,17 @@ def _parse_and_save_meta(slug, file_path, filename):
             "endpoint_count": endpoint_count,
             "output_dir": project_path,
             "parsed_json_path": parsed_json_path,
+            "base_url": parsed.get("project", {}).get("base_url", ""),
         }
         save_json(data_path(slug, "swagger", "meta.json"), meta)
+
+        from app.controllers import environments_controller
+        servers = parsed.get("project", {}).get("servers", [])
+        environments, needs_naming = environments_controller.sync_from_swagger(slug, servers)
+        meta["environments"] = environments
+        meta["needs_env_naming"] = needs_naming
+        meta["no_servers_found"] = len(servers) == 0
+
         return meta
 
     except Exception as e:

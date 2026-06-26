@@ -86,9 +86,18 @@ export const getScenarioJob = (id, jobId) =>
 export const stopScenarioJob = (id, jobId) =>
   api.post(`/projects/${id}/scenario-jobs/${jobId}/stop`).then((r) => r.data);
 
+// Environments
+export const listEnvironments = (id) => api.get(`/projects/${id}/environments`).then((r) => r.data);
+export const createEnvironment = (id, body) =>
+  api.post(`/projects/${id}/environments`, body).then((r) => r.data);
+export const updateEnvironmentNames = (id, environments) =>
+  api.put(`/projects/${id}/environments`, { environments }).then((r) => r.data);
+export const deleteEnvironment = (id, envId) =>
+  api.delete(`/projects/${id}/environments/${envId}`).then((r) => r.data);
+
 // Executions
-export const executeGeneration = (id, gid) =>
-  api.post(`/projects/${id}/generations/${gid}/execute`).then((r) => r.data);
+export const executeGeneration = (id, gid, body = {}) =>
+  api.post(`/projects/${id}/generations/${gid}/execute`, body).then((r) => r.data);
 export const listExecutions = (id) =>
   api.get(`/projects/${id}/executions`).then((r) => r.data);
 export const getExecution = (id, eid) =>

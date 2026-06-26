@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, send_file
+from flask import Blueprint, jsonify, request, send_file
 
 from app.controllers import executions_controller
 from app.middleware.auth import require_auth
@@ -9,7 +9,8 @@ bp = Blueprint("executions", __name__)
 @bp.post("/projects/<project_id>/generations/<gen_id>/execute")
 @require_auth
 def execute_generation(project_id, gen_id):
-    return jsonify(executions_controller.execute(project_id, gen_id)), 202
+    body = request.get_json(silent=True) or {}
+    return jsonify(executions_controller.execute(project_id, gen_id, environment_id=body.get("environment_id"))), 202
 
 
 @bp.get("/projects/<project_id>/executions")

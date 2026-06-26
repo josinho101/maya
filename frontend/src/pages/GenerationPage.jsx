@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
-  Box, Typography, Button, Card, CardContent, CircularProgress, Alert,
+  Box, Typography, Button, Card, CardContent, CardActions, CircularProgress, Alert,
   Accordion, AccordionSummary, AccordionDetails, Table, TableBody,
   TableCell, TableHead, TableRow, IconButton, LinearProgress, Chip, Tooltip,
   TextField, InputAdornment, Dialog, DialogContent, DialogActions,
-  Tabs, Tab, Badge,
+  Tabs, Tab, Badge, Select, MenuItem,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import EditIcon from "@mui/icons-material/Edit";
@@ -20,6 +20,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   getGeneration, editTestCase, deleteTestCase, approveGeneration, approveTestCase,
   executeGeneration, triggerGeneration, stopGeneration, listScenarioJobs, stopScenarioJob,
+  listEnvironments, updateEnvironmentNames, deleteEnvironment,
 } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import StatusChip from "../components/StatusChip";
@@ -27,6 +28,7 @@ import EditTestCaseDialog from "../components/EditTestCaseDialog";
 import AddTestCaseDialog from "../components/AddTestCaseDialog";
 import RegenerateDialog from "../components/RegenerateDialog";
 import ClosableDialogTitle from "../components/ClosableDialogTitle";
+import AddEnvironmentDialog from "../components/AddEnvironmentDialog";
 
 const POLLING_STATUSES = ["PENDING", "GENERATING"];
 const ACTIVE_JOB_STATUSES = ["QUEUED", "RUNNING"];
@@ -59,6 +61,24 @@ export default function GenerationPage() {
   const [mainTab, setMainTab] = useState(searchParams.get("jobsTab") === "completed" ? "completed" : "all");
   const [scenarioJobs, setScenarioJobs] = useState([]);
   const jobsPollRef = useRef(null);
+
+  const [environments, setEnvironments] = useState([]);
+  const [selectedEnvId, setSelectedEnvId] = useState("");
+  const [addEnvOpen, setAddEnvOpen] = useState(false);
+  const [envEditTarget, setEnvEditTarget] = useState(null);
+  const [envNameInput, setEnvNameInput] = useState("");
+  const [envSaving, setEnvSaving] = useState(false);
+  const [envDeleteTarget, setEnvDeleteTarget] = useState(null);
+  const [envDeleting, setEnvDeleting] = useState(false);
+
+  const fetchEnvironments = useCallback(async () => {
+    const envs = await listEnvironments(projectId).catch(() => []);
+    setEnvironments(envs);
+    setSelectedEnvId((prev) => (envs.some((e) => e.id === prev) ? prev : envs[0]?.id || ""));
+    return envs;
+  }, [projectId]);
+
+  useEffect(() => { fetchEnvironments(); }, [fetchEnvironments]);
 
   const fetchGen = useCallback(async () => {
     try {
@@ -136,11 +156,50 @@ export default function GenerationPage() {
   const handleExecute = async () => {
     try {
       setExecuting(true);
-      const res = await executeGeneration(projectId, genId);
+      const res = await executeGeneration(projectId, genId, { environment_id: selectedEnvId });
       nav(`/projects/${projectId}/executions/${res.execution_id}`);
     } catch (e) {
       setError(e.response?.data?.error || "Execute failed");
       setExecuting(false);
+    }
+  };
+
+  const handleEnvCreated = async (createdList) => {
+    setAddEnvOpen(false);
+    setEnvironments(createdList);
+    const newest = createdList[createdList.length - 1];
+    if (newest) setSelectedEnvId(newest.id);
+  };
+
+  const handleOpenEnvEdit = (env) => {
+    setEnvEditTarget(env);
+    setEnvNameInput(env.name);
+  };
+
+  const handleEnvRename = async () => {
+    if (!envNameInput.trim()) return;
+    try {
+      setEnvSaving(true);
+      await updateEnvironmentNames(projectId, [{ id: envEditTarget.id, name: envNameInput.trim() }]);
+      await fetchEnvironments();
+      setEnvEditTarget(null);
+    } catch (e) {
+      setError(e.response?.data?.error || "Failed to rename environment");
+    } finally {
+      setEnvSaving(false);
+    }
+  };
+
+  const handleEnvDelete = async () => {
+    try {
+      setEnvDeleting(true);
+      await deleteEnvironment(projectId, envDeleteTarget.id);
+      await fetchEnvironments();
+      setEnvDeleteTarget(null);
+    } catch (e) {
+      setError(e.response?.data?.error || "Failed to delete environment");
+    } finally {
+      setEnvDeleting(false);
     }
   };
 
@@ -338,6 +397,7 @@ export default function GenerationPage() {
             />
             <Tab label={`Job Queue (${activeJobs.length})`} value="active" />
             <Tab label={`Completed Jobs (${completedJobs.length})`} value="completed" />
+            <Tab label="Environments" value="environments" />
           </Tabs>
 
           {mainTab === "needs_review" && results.every((r) => !(r.test_cases || []).some((tc) => tc.needs_review)) && (
@@ -380,15 +440,40 @@ export default function GenerationPage() {
                     sx={{ width: 280 }}
                   />
                 )}
-                {gen.status === "APPROVED" && (
-                  <Button
-                    variant="contained"
-                    startIcon={executing ? <CircularProgress size={16} /> : <PlayArrowIcon />}
-                    onClick={handleExecute}
-                    disabled={executing}
+                {gen.status === "APPROVED" && environments.length > 0 && (
+                  <Select
+                    size="small"
+                    value={selectedEnvId}
+                    onChange={(e) => setSelectedEnvId(e.target.value)}
+                    sx={{ minWidth: 160 }}
                   >
-                    Run
+                    {environments.map((env) => (
+                      <MenuItem key={env.id} value={env.id}>{env.name}</MenuItem>
+                    ))}
+                  </Select>
+                )}
+                {gen.status === "APPROVED" && environments.length === 0 && (
+                  <Button
+                    variant="outlined"
+                    startIcon={<AddIcon />}
+                    onClick={() => setAddEnvOpen(true)}
+                  >
+                    Add Environment
                   </Button>
+                )}
+                {gen.status === "APPROVED" && (
+                  <Tooltip title={environments.length === 0 ? "Add an environment first" : ""}>
+                    <span>
+                      <Button
+                        variant="contained"
+                        startIcon={executing ? <CircularProgress size={16} /> : <PlayArrowIcon />}
+                        onClick={handleExecute}
+                        disabled={executing || environments.length === 0}
+                      >
+                        Run
+                      </Button>
+                    </span>
+                  </Tooltip>
                 )}
               </Box>
             </Box>
@@ -444,6 +529,61 @@ export default function GenerationPage() {
               </Table>
             );
           })()}
+
+          {mainTab === "environments" && (
+            <Box>
+              <Button
+                variant="outlined"
+                startIcon={<AddIcon />}
+                onClick={() => setAddEnvOpen(true)}
+                sx={{ mb: 2 }}
+              >
+                Add Environment
+              </Button>
+              {environments.length === 0 ? (
+                <Typography color="text.secondary" variant="body2">No environments configured yet.</Typography>
+              ) : (
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+                  {environments.map((env) => (
+                    <Card key={env.id} sx={{ width: 280, height: 210, flex: "0 0 280px", display: "flex", flexDirection: "column" }}>
+                      <CardContent sx={{ flex: 1, overflow: "hidden" }}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                          <Typography variant="h6" fontWeight={600} noWrap sx={{ flex: 1 }}>{env.name}</Typography>
+                        </Box>
+                        <Chip
+                          label={env.source === "manual" ? "Manual" : "From Spec"}
+                          size="small"
+                          variant="outlined"
+                          sx={{ mb: 1.5 }}
+                        />
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ fontFamily: "monospace", overflowWrap: "break-word" }}
+                        >
+                          {env.url}
+                        </Typography>
+                      </CardContent>
+                      <CardActions sx={{ px: 2, pb: 2, pt: 0, justifyContent: "flex-end" }}>
+                        <Tooltip title="Rename environment">
+                          <IconButton size="small" onClick={() => handleOpenEnvEdit(env)}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        {env.source === "manual" && (
+                          <Tooltip title="Delete environment">
+                            <IconButton size="small" color="error" onClick={() => setEnvDeleteTarget(env)}>
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </CardActions>
+                    </Card>
+                  ))}
+                </Box>
+              )}
+            </Box>
+          )}
 
           {(mainTab === "all" || mainTab === "needs_review") && results.map((result, idx) => {
             const q = tcSearch.trim().toLowerCase();
@@ -581,6 +721,47 @@ export default function GenerationPage() {
         <DialogActions>
           <Button variant="outlined" onClick={() => setDeleteTc(null)}>Cancel</Button>
           <Button variant="contained" color="error" onClick={handleDelete}>Delete</Button>
+        </DialogActions>
+      </Dialog>
+
+      <AddEnvironmentDialog
+        open={addEnvOpen}
+        projectId={projectId}
+        onClose={() => setAddEnvOpen(false)}
+        onCreated={handleEnvCreated}
+      />
+
+      <Dialog open={!!envEditTarget} onClose={() => setEnvEditTarget(null)} maxWidth="sm" fullWidth>
+        <ClosableDialogTitle onClose={() => setEnvEditTarget(null)}>Rename Environment</ClosableDialogTitle>
+        <DialogContent>
+          <TextField
+            label="Name" fullWidth required sx={{ mt: 1 }}
+            value={envNameInput}
+            onChange={(e) => setEnvNameInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleEnvRename()}
+          />
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1, fontFamily: "monospace" }}>
+            {envEditTarget?.url}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button variant="outlined" onClick={() => setEnvEditTarget(null)}>Cancel</Button>
+          <Button variant="contained" onClick={handleEnvRename} disabled={envSaving}>
+            {envSaving ? <CircularProgress size={20} /> : "Save"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={!!envDeleteTarget} onClose={() => setEnvDeleteTarget(null)}>
+        <ClosableDialogTitle onClose={() => setEnvDeleteTarget(null)}>Delete Environment</ClosableDialogTitle>
+        <DialogContent>
+          <Typography>Delete <strong>{envDeleteTarget?.name}</strong>? This cannot be undone.</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button variant="outlined" onClick={() => setEnvDeleteTarget(null)}>Cancel</Button>
+          <Button variant="contained" color="error" onClick={handleEnvDelete} disabled={envDeleting}>
+            {envDeleting ? <CircularProgress size={20} /> : "Delete"}
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

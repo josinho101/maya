@@ -5,6 +5,7 @@ import threading
 from datetime import datetime, timezone
 
 from app.controllers import BadRequest, NotFound
+from app.controllers import environments_controller
 from app.controllers.generations_controller import get_generation
 from app.controllers.projects_controller import find_project
 from app.storage.json_store import data_path, load_json, new_id, save_json
@@ -31,7 +32,7 @@ def _list_executions(slug):
     return sorted(execs, key=lambda x: x.get("started_at", ""), reverse=True)
 
 
-def _run_execution(slug, exec_id, output_dir, testcases_path):
+def _run_execution(slug, exec_id, output_dir, testcases_path, base_url_override=None, environment_name=None):
     exc = _get_execution(slug, exec_id)
     exc["status"] = "RUNNING"
     _save_execution(slug, exc)
@@ -41,7 +42,11 @@ def _run_execution(slug, exec_id, output_dir, testcases_path):
     try:
         from execution.execution_runner import ExecutionRunner
 
-        report_paths = ExecutionRunner.execute(output_dir, testcases_path)
+        report_paths = ExecutionRunner.execute(
+            output_dir, testcases_path,
+            base_url_override=base_url_override,
+            environment_name=environment_name,
+        )
 
         with open(report_paths["latest_json_report"], encoding="utf-8") as f:
             results = json.load(f)
@@ -79,7 +84,7 @@ def _run_execution(slug, exec_id, output_dir, testcases_path):
     _save_execution(slug, exc)
 
 
-def execute(project_id, gen_id):
+def execute(project_id, gen_id, environment_id=None):
     p = find_project(project_id)
     if not p:
         raise NotFound("project not found")
@@ -91,6 +96,14 @@ def execute(project_id, gen_id):
 
     if gen["status"] != "APPROVED":
         raise BadRequest("generation must be APPROVED before executing")
+
+    envs = environments_controller.list_all(project_id)
+    if environment_id:
+        env = next((e for e in envs if e["id"] == environment_id), None)
+        if env is None:
+            raise BadRequest("environment not found")
+    else:
+        env = envs[0] if envs else None
 
     exec_id = new_id()
     now = datetime.now(timezone.utc).isoformat()
@@ -105,6 +118,9 @@ def execute(project_id, gen_id):
         "report_json": None,
         "summary": None,
         "error": None,
+        "environment_id": env["id"] if env else None,
+        "environment_name": env["name"] if env else None,
+        "base_url": env["url"] if env else None,
     }
     _save_execution(slug, exc)
 
@@ -112,7 +128,8 @@ def execute(project_id, gen_id):
 
     threading.Thread(
         target=_run_execution,
-        args=(slug, exec_id, gen["output_dir"], gen["testcases_path"]),
+        args=(slug, exec_id, gen["output_dir"], gen["testcases_path"],
+              env["url"] if env else None, env["name"] if env else None),
         daemon=True,
     ).start()
 
