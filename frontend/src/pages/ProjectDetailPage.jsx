@@ -344,7 +344,7 @@ export default function ProjectDetailPage() {
       </Box>
 
       <Box sx={{ mt: 3 }}>
-        <ExecutionCharts executions={filteredExecutions} />
+        <ExecutionCharts executions={filteredExecutions} projectId={projectId} />
       </Box>
 
       {/* Executions */}
