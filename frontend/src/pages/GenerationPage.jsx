@@ -37,6 +37,7 @@ import AddEnvironmentDialog from "../components/AddEnvironmentDialog";
 
 const POLLING_STATUSES = ["PENDING", "GENERATING"];
 const ACTIVE_JOB_STATUSES = ["QUEUED", "RUNNING"];
+const VALID_TABS = ["all", "needs_review", "active", "completed", "environments"];
 const METHOD_COLOR = { GET: "info", POST: "success", PUT: "warning", PATCH: "warning", DELETE: "error" };
 const LIFECYCLE_ROLE_COLOR = {
   create: "success", read: "info", update: "warning", delete: "error",
@@ -63,7 +64,9 @@ export default function GenerationPage() {
   const [regenOpen, setRegenOpen] = useState(false);
   const [regenEndpoints, setRegenEndpoints] = useState([]);
   const [tcSearch, setTcSearch] = useState("");
-  const [mainTab, setMainTab] = useState(searchParams.get("jobsTab") === "completed" ? "completed" : "all");
+  const [mainTab, setMainTab] = useState(
+    VALID_TABS.includes(searchParams.get("jobsTab")) ? searchParams.get("jobsTab") : "all"
+  );
   const [scenarioJobs, setScenarioJobs] = useState([]);
   const jobsPollRef = useRef(null);
 

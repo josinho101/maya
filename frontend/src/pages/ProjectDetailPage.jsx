@@ -27,6 +27,7 @@ import AddEnvironmentDialog from "../components/AddEnvironmentDialog";
 
 const ACTIVE_JOB_STATUSES = ["QUEUED", "RUNNING"];
 const ACTIVE_GEN_STATUSES = ["PENDING", "GENERATING"];
+const STATS_REFRESH_INTERVAL_MS = 5000;
 
 export default function ProjectDetailPage() {
   const { projectId } = useParams();
@@ -55,6 +56,7 @@ export default function ProjectDetailPage() {
 
   // Pending-review count + scenario jobs panel
   const [pendingReviewCount, setPendingReviewCount] = useState(0);
+  const [totalTestCases, setTotalTestCases] = useState(0);
   const [scenarioJobs, setScenarioJobs] = useState([]);
   const jobsPollRef = useRef(null);
 
@@ -78,11 +80,11 @@ export default function ProjectDetailPage() {
       const latestGen = gens.find((g) => ["REVIEW", "APPROVED", "STOPPED"].includes(g.status));
       if (latestGen) {
         const genData = await getGeneration(projectId, latestGen.id).catch(() => null);
-        const count = (genData?.testcases?.results || []).reduce(
-          (n, r) => n + (r.test_cases || []).filter((tc) => tc.needs_review).length, 0
-        );
-        setPendingReviewCount(count);
+        const allTestCases = (genData?.testcases?.results || []).flatMap((r) => r.test_cases || []);
+        setTotalTestCases(allTestCases.length);
+        setPendingReviewCount(allTestCases.filter((tc) => tc.needs_review).length);
       } else {
+        setTotalTestCases(0);
         setPendingReviewCount(0);
       }
     } catch {
@@ -127,6 +129,12 @@ export default function ProjectDetailPage() {
     });
     return () => clearInterval(jobsPollRef.current);
   }, [fetchScenarioJobs, fetchAll, projectId]);
+
+  // Periodic refresh for the summary tiles (independent of the active-job polling above).
+  useEffect(() => {
+    const id = setInterval(fetchAll, STATS_REFRESH_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [fetchAll]);
 
   useEffect(() => {
     if (environments.length > 0 && !environments.some((e) => e.id === selectedEnvId)) {
@@ -216,6 +224,7 @@ export default function ProjectDetailPage() {
   const swagger = project.swagger;
   const hasAnyGeneration = generations.length > 0;
   const activeGen = generations.find((g) => ACTIVE_GEN_STATUSES.includes(g.status));
+  const latestGen = generations.find((g) => ["REVIEW", "APPROVED", "STOPPED"].includes(g.status)) || generations[0];
 
   const genRows = generations.map((g) => ({ kind: "generation", id: g.id, status: g.status, created_at: g.created_at }));
   const scenarioRows = scenarioJobs.map((j) => ({ kind: "scenario", id: j.id, status: j.status, created_at: j.created_at, job: j }));
@@ -285,17 +294,13 @@ export default function ProjectDetailPage() {
                 </Box>
               </>
             )}
+            {swagger && swagger.endpoint_count != null && (
+              <Chip label={`${swagger.endpoint_count} endpoints`} color="primary" size="small" />
+            )}
             {swagger && !hasAnyGeneration && !activeGen && !generating && isAdmin && (
               <Button variant="contained" size="small" startIcon={<PlayArrowIcon />} onClick={handleGenerate}>
                 Generate Test Cases
               </Button>
-            )}
-            {swagger && hasAnyGeneration && (
-              <Badge badgeContent={pendingReviewCount} color="warning" max={99}>
-                <Button variant="outlined" size="small" startIcon={<OpenInNewIcon />} onClick={handleViewTestCases}>
-                  View Test Cases
-                </Button>
-              </Badge>
             )}
             {swagger && (activeGen || generating) && (
               <Button
@@ -308,7 +313,7 @@ export default function ProjectDetailPage() {
               </Button>
             )}
             </Box>
-            {(environments.length > 0 || (swagger && swagger.endpoint_count != null)) && (
+            {(environments.length > 0 || (swagger && hasAnyGeneration)) && (
               <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", mt: 0.5 }}>
                 {environments.length > 0 && (
                   <>
@@ -325,8 +330,12 @@ export default function ProjectDetailPage() {
                     </Select>
                   </>
                 )}
-                {swagger && swagger.endpoint_count != null && (
-                  <Chip label={`${swagger.endpoint_count} endpoints`} color="primary" size="small" />
+                {swagger && hasAnyGeneration && (
+                  <Badge badgeContent={pendingReviewCount} color="warning" max={99}>
+                    <Button variant="outlined" size="small" startIcon={<OpenInNewIcon />} onClick={handleViewTestCases}>
+                      View Test Cases
+                    </Button>
+                  </Badge>
                 )}
               </Box>
             )}
@@ -337,7 +346,17 @@ export default function ProjectDetailPage() {
       </Box>
 
       <Box sx={{ mt: 3 }}>
-        <ExecutionCharts executions={filteredExecutions} projectId={projectId} />
+        <ExecutionCharts
+          executions={filteredExecutions}
+          projectId={projectId}
+          generationId={latestGen?.id}
+          stats={{
+            totalTestCases,
+            pendingReviewCount,
+            activeJobCount: activeQueueRows.length,
+            environmentCount: environments.length,
+          }}
+        />
       </Box>
 
       {/* Executions */}

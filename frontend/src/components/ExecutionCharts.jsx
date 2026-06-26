@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Box, Card, CardContent, MenuItem, Select, Typography } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 import {
   CartesianGrid,
+  Cell,
   Legend,
   Line,
   LineChart,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -15,10 +19,13 @@ import { getExecutionResults } from "../api/client";
 const COLORS = {
   passed:   "#66BB6A",
   failed:   "#EF5350",
+  skipped:  "#FFB74D",
   duration: "#7C4DFF",
   endpoint: "#29B6F6",
+  active:   "#FDD835",
   grid:     "#2A2A4A",
   tick:     "#aaa",
+  cardBg:   "#1A1A2E",
 };
 
 const TOOLTIP_STYLE = {
@@ -144,7 +151,27 @@ function useEndpointPerformance(projectId, executions) {
   return { seriesByEndpoint, endpoints, loading };
 }
 
-export default function ExecutionCharts({ executions, projectId }) {
+export default function ExecutionCharts({ executions, projectId, stats, generationId }) {
+  const nav = useNavigate();
+  const leftTiles = [
+    { label: "Total Test Cases", value: stats.totalTestCases, color: COLORS.endpoint, tab: "all" },
+    { label: "Needs Review", value: stats.pendingReviewCount, color: COLORS.skipped, tab: "needs_review" },
+  ];
+  const rightTiles = [
+    { label: "Active Jobs", value: stats.activeJobCount, color: COLORS.active, tab: "active" },
+    { label: "Environments", value: stats.environmentCount ?? "—", color: COLORS.passed, tab: "environments" },
+  ];
+  const goToTab = (tab) => nav(`/projects/${projectId}/generations/${generationId}?jobsTab=${tab}`);
+
+  const lastCompleted = executions.find((e) => e.status === "COMPLETED" && e.summary != null);
+  const pieData = lastCompleted
+    ? [
+        { name: "Passed", value: lastCompleted.summary.passed, color: COLORS.passed },
+        { name: "Failed", value: lastCompleted.summary.failed, color: COLORS.failed },
+        { name: "Skipped", value: lastCompleted.summary.skipped, color: COLORS.skipped },
+      ].filter((d) => d.value > 0)
+    : [];
+
   const rawData = executions
     .filter(
       (e) =>
@@ -196,13 +223,107 @@ export default function ExecutionCharts({ executions, projectId }) {
 
   return (
     <>
-      {hasTrendData ? (
-        <Box sx={{ display: "flex", gap: 2, mb: 2, width: "100%" }}>
-          {/* Reserved for upcoming tiles */}
-          <Box sx={{ flex: 1, minWidth: 0 }} />
+      <Box sx={{ display: "flex", gap: 2, mb: 2, width: "100%" }}>
+        {/* Summary tiles */}
+        <Box
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            display: "grid",
+            gridTemplateColumns: "1fr",
+            gridTemplateRows: "1fr 1fr",
+            gap: 1.5,
+          }}
+        >
+          {leftTiles.map((t) => (
+            <Card
+              key={t.label}
+              sx={{
+                height: "100%",
+                cursor: generationId ? "pointer" : "default",
+                "&:hover": generationId ? { backgroundColor: "action.hover" } : undefined,
+              }}
+              onClick={generationId ? () => goToTab(t.tab) : undefined}
+            >
+              <CardContent
+                sx={{
+                  height: "100%",
+                  textAlign: "center",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                }}
+              >
+                <Typography variant="h5" fontWeight={700} sx={{ fontSize: "3rem", color: t.color }}>{t.value ?? "—"}</Typography>
+                <Typography variant="caption" color="text.secondary">{t.label}</Typography>
+              </CardContent>
+            </Card>
+          ))}
+        </Box>
 
-          {/* Pass / Fail chart */}
-          <Box sx={{ flex: 1, minWidth: 0 }}>
+        {/* Last-execution outcome pie chart */}
+        <Box sx={{ flex: 2, minWidth: 0 }}>
+          <Card sx={{ height: "100%" }}>
+            <CardContent>
+              <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                Last Execution Outcome
+              </Typography>
+              {pieData.length > 0 ? (
+                <Box sx={{ position: "relative" }}>
+                  <ResponsiveContainer width="100%" height={280}>
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        dataKey="value"
+                        nameKey="name"
+                        cy="44%"
+                        innerRadius="55%"
+                        outerRadius="85%"
+                        paddingAngle={3}
+                        cornerRadius={6}
+                      >
+                        {pieData.map((d) => (
+                          <Cell key={d.name} fill={d.color} stroke={COLORS.cardBg} strokeWidth={3} />
+                        ))}
+                      </Pie>
+                      <Legend
+                        wrapperStyle={{ fontSize: 12 }}
+                        iconType="circle"
+                        iconSize={8}
+                        formatter={(value, entry) => `${value} (${entry.payload.value})`}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: "44%",
+                      left: "50%",
+                      transform: "translate(-50%, -50%)",
+                      textAlign: "center",
+                      pointerEvents: "none",
+                    }}
+                  >
+                    <Typography variant="h5" fontWeight={700}>
+                      {lastCompleted.summary.success_rate}%
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Pass Rate
+                    </Typography>
+                  </Box>
+                </Box>
+              ) : (
+                <Typography color="text.secondary" variant="body2">
+                  No completed execution yet. Data will be populated once an execution finishes.
+                </Typography>
+              )}
+            </CardContent>
+          </Card>
+        </Box>
+
+        {/* Pass / Fail chart */}
+        <Box sx={{ flex: 4, minWidth: 0 }}>
+          {hasTrendData ? (
             <Card sx={{ height: "100%" }}>
               <CardContent>
                 <Typography variant="subtitle1" fontWeight={600} gutterBottom>
@@ -240,20 +361,57 @@ export default function ExecutionCharts({ executions, projectId }) {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
-          </Box>
+          ) : (
+            <Card sx={{ height: "100%" }}>
+              <CardContent>
+                <Typography variant="h6" fontWeight={600} gutterBottom>
+                  Execution Trends
+                </Typography>
+                <Typography color="text.secondary" variant="body2">
+                  Not enough data to display trends. Complete at least 2 executions.
+                </Typography>
+              </CardContent>
+            </Card>
+          )}
         </Box>
-      ) : (
-        <Card sx={{ mb: 2 }}>
-          <CardContent>
-            <Typography variant="h6" fontWeight={600} gutterBottom>
-              Execution Trends
-            </Typography>
-            <Typography color="text.secondary" variant="body2">
-              Not enough data to display trends. Complete at least 2 executions.
-            </Typography>
-          </CardContent>
-        </Card>
-      )}
+
+        {/* Summary tiles (right of Pass/Fail chart) */}
+        <Box
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            display: "grid",
+            gridTemplateColumns: "1fr",
+            gridTemplateRows: "1fr 1fr",
+            gap: 1.5,
+          }}
+        >
+          {rightTiles.map((t) => (
+            <Card
+              key={t.label}
+              sx={{
+                height: "100%",
+                cursor: generationId ? "pointer" : "default",
+                "&:hover": generationId ? { backgroundColor: "action.hover" } : undefined,
+              }}
+              onClick={generationId ? () => goToTab(t.tab) : undefined}
+            >
+              <CardContent
+                sx={{
+                  height: "100%",
+                  textAlign: "center",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                }}
+              >
+                <Typography variant="h5" fontWeight={700} sx={{ fontSize: "3rem", color: t.color }}>{t.value ?? "—"}</Typography>
+                <Typography variant="caption" color="text.secondary">{t.label}</Typography>
+              </CardContent>
+            </Card>
+          ))}
+        </Box>
+      </Box>
 
       {(hasTrendData || endpoints.length > 0) && (
         <Box sx={{ display: "flex", gap: 2, mb: 2, width: "100%" }}>
