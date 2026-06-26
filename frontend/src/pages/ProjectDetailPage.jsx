@@ -3,7 +3,7 @@ import {
   Box, Typography, Button, ButtonGroup, Card, CardContent, CircularProgress,
   Alert, Chip, Table, TableBody, TableCell, TableHead, TableRow,
   IconButton, Tooltip, LinearProgress, Badge,
-  Dialog, DialogContent, DialogActions, TextField,
+  Dialog, DialogContent, DialogActions, TextField, Select, MenuItem,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
@@ -15,7 +15,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   getProject, uploadSwagger, importSwaggerFromUrl, triggerGeneration, getGeneration,
   listGenerations, listExecutions, getReportUrl, listScenarioJobs, stopScenarioJob,
-  stopGeneration,
+  stopGeneration, listEnvironments,
 } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import StatusChip from "../components/StatusChip";
@@ -36,6 +36,8 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState(null);
   const [generations, setGenerations] = useState([]);
   const [executions, setExecutions] = useState([]);
+  const [environments, setEnvironments] = useState([]);
+  const [selectedEnvId, setSelectedEnvId] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -57,14 +59,16 @@ export default function ProjectDetailPage() {
 
   const fetchAll = useCallback(async () => {
     try {
-      const [proj, gens, execs] = await Promise.all([
+      const [proj, gens, execs, envs] = await Promise.all([
         getProject(projectId),
         listGenerations(projectId),
         listExecutions(projectId),
+        listEnvironments(projectId),
       ]);
       setProject(proj);
       setGenerations(gens);
       setExecutions(execs);
+      setEnvironments(envs);
 
       const latestGen = gens.find((g) => ["REVIEW", "APPROVED", "STOPPED"].includes(g.status));
       if (latestGen) {
@@ -118,6 +122,12 @@ export default function ProjectDetailPage() {
     });
     return () => clearInterval(jobsPollRef.current);
   }, [fetchScenarioJobs, fetchAll, projectId]);
+
+  useEffect(() => {
+    if (environments.length > 0 && !environments.some((e) => e.id === selectedEnvId)) {
+      setSelectedEnvId(environments[0].id);
+    }
+  }, [environments, selectedEnvId]);
 
   const handleStopScenarioJob = async (jobId) => {
     await stopScenarioJob(projectId, jobId).catch(() => {});
@@ -216,6 +226,10 @@ export default function ProjectDetailPage() {
 
   const completedJobsTargetGenId = generations.find((g) => ["REVIEW", "APPROVED", "STOPPED"].includes(g.status))?.id;
 
+  const filteredExecutions = environments.length > 0
+    ? executions.filter((e) => e.environment_id === selectedEnvId)
+    : executions;
+
   return (
     <Box>
       {/* Compact page header */}
@@ -286,18 +300,25 @@ export default function ProjectDetailPage() {
               </Button>
             )}
             </Box>
-            {swagger && (
-              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", justifyContent: "flex-end", mt: 0.5 }}>
-                {swagger.base_url && (
-                  <Chip label={swagger.base_url} size="small" variant="outlined" color="secondary" />
+            {(environments.length > 0 || (swagger && swagger.endpoint_count != null)) && (
+              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", mt: 0.5 }}>
+                {environments.length > 0 && (
+                  <>
+                    <Typography variant="caption" color="text.secondary">Environment</Typography>
+                    <Select
+                      size="small"
+                      value={selectedEnvId}
+                      onChange={(e) => setSelectedEnvId(e.target.value)}
+                      sx={{ minWidth: 160, fontSize: 13, "& .MuiSelect-select": { py: 0.5 } }}
+                    >
+                      {environments.map((env) => (
+                        <MenuItem key={env.id} value={env.id} sx={{ fontSize: 13 }}>{env.name}</MenuItem>
+                      ))}
+                    </Select>
+                  </>
                 )}
-                {swagger.endpoint_count != null && (
+                {swagger && swagger.endpoint_count != null && (
                   <Chip label={`${swagger.endpoint_count} endpoints`} color="primary" size="small" />
-                )}
-                {swagger.uploaded_at && !isNaN(new Date(swagger.uploaded_at)) && (
-                  <Typography variant="caption" color="text.secondary" sx={{ alignSelf: "center" }}>
-                    Uploaded {new Date(swagger.uploaded_at).toLocaleString()}
-                  </Typography>
                 )}
               </Box>
             )}
@@ -308,7 +329,7 @@ export default function ProjectDetailPage() {
       </Box>
 
       <Box sx={{ mt: 3 }}>
-        <ExecutionCharts executions={executions} />
+        <ExecutionCharts executions={filteredExecutions} />
       </Box>
 
       {/* Executions */}

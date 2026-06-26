@@ -129,7 +129,7 @@ export default function ExecutionCharts({ executions }) {
         <Card sx={{ height: "100%" }}>
           <CardContent>
             <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-              Execution Duration ({unit})
+              Total Execution Duration ({unit})
             </Typography>
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={chartData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
