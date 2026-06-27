@@ -3,6 +3,8 @@ import { Chip } from "@mui/material";
 const STATUS_CONFIG = {
   PENDING:    { color: "default",  label: "Pending" },
   GENERATING: { color: "warning",  label: "Generating" },
+  SCENARIOS_READY:  { color: "info",    label: "Scenarios Ready" },
+  GENERATING_STEPS: { color: "warning", label: "Generating Steps" },
   REVIEW:     { color: "info",     label: "Ready for Review" },
   APPROVED:   { color: "success",  label: "Approved" },
   FAILED:     { color: "error",    label: "Failed" },

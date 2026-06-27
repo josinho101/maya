@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   Box, Button, CircularProgress, Alert, Dialog,
-  DialogContent, DialogActions, TextField, Chip,
+  DialogContent, DialogActions, TextField, Chip, Typography,
 } from "@mui/material";
 import FileFieldEditor from "./FileFieldEditor";
 import ClosableDialogTitle from "./ClosableDialogTitle";
@@ -104,6 +104,24 @@ export default function EditTestCaseDialog({ open, tc, endpoint, method, project
         />
         <JsonField label="Expected Response" value={form.expected_response || {}}
           onChange={(v) => setForm({ ...form, expected_response: v })} />
+        {(form.steps?.length > 0 || form.steps_error) && (
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+              Test Steps
+            </Typography>
+            {form.steps_error ? (
+              <Chip label="steps generation failed" size="small" color="warning" variant="outlined" />
+            ) : (
+              <Box sx={{ fontFamily: "monospace", fontSize: 13, bgcolor: "action.hover", p: 1.5, borderRadius: 1 }}>
+                {form.steps.map((line, i) => (
+                  <Typography key={i} variant="inherit" component="div" sx={{ overflowWrap: "break-word" }}>
+                    {line}
+                  </Typography>
+                ))}
+              </Box>
+            )}
+          </Box>
+        )}
       </DialogContent>
       <DialogActions>
         <Button variant="outlined" onClick={onClose}>Cancel</Button>

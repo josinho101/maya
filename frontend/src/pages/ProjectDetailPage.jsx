@@ -26,7 +26,7 @@ import EnvNamingDialog from "../components/EnvNamingDialog";
 import AddEnvironmentDialog from "../components/AddEnvironmentDialog";
 
 const ACTIVE_JOB_STATUSES = ["QUEUED", "RUNNING"];
-const ACTIVE_GEN_STATUSES = ["PENDING", "GENERATING"];
+const ACTIVE_GEN_STATUSES = ["PENDING", "GENERATING", "SCENARIOS_READY", "GENERATING_STEPS"];
 const STATS_REFRESH_INTERVAL_MS = 5000;
 
 export default function ProjectDetailPage() {
@@ -302,18 +302,8 @@ export default function ProjectDetailPage() {
                 Generate Test Cases
               </Button>
             )}
-            {swagger && (activeGen || generating) && (
-              <Button
-                variant="outlined" color="warning" size="small"
-                startIcon={<CircularProgress size={16} />}
-                onClick={activeGen ? () => nav(`/projects/${projectId}/generations/${activeGen.id}`) : undefined}
-                disabled={!activeGen}
-              >
-                View Progress
-              </Button>
-            )}
             </Box>
-            {(environments.length > 0 || (swagger && hasAnyGeneration)) && (
+            {(environments.length > 0 || (swagger && (activeGen || generating || totalTestCases > 0))) && (
               <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", mt: 0.5 }}>
                 {environments.length > 0 && (
                   <>
@@ -330,7 +320,17 @@ export default function ProjectDetailPage() {
                     </Select>
                   </>
                 )}
-                {swagger && hasAnyGeneration && (
+                {swagger && (activeGen || generating) && (
+                  <Button
+                    variant="outlined" color="warning" size="small"
+                    startIcon={<CircularProgress size={16} />}
+                    onClick={activeGen ? () => nav(`/projects/${projectId}/generations/${activeGen.id}`) : undefined}
+                    disabled={!activeGen}
+                  >
+                    View Progress
+                  </Button>
+                )}
+                {swagger && !activeGen && !generating && totalTestCases > 0 && (
                   <Badge badgeContent={pendingReviewCount} color="warning" max={99}>
                     <Button variant="outlined" size="small" startIcon={<OpenInNewIcon />} onClick={handleViewTestCases}>
                       View Test Cases

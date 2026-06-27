@@ -40,7 +40,7 @@ export default function ProjectsPage() {
         projs.map(async (p) => {
           try {
             const gens = await listGenerations(p.id);
-            return { id: p.id, active: gens.some((g) => ["PENDING", "GENERATING"].includes(g.status)) };
+            return { id: p.id, active: gens.some((g) => ["PENDING", "GENERATING", "SCENARIOS_READY", "GENERATING_STEPS"].includes(g.status)) };
           } catch {
             return { id: p.id, active: false };
           }

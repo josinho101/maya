@@ -74,3 +74,30 @@ class PromptBuilder:
         }
 
         return cls.render(template, variables)
+
+    @classmethod
+    def build_steps_prompt(cls, test_case, endpoint, method):
+        """
+        Prompt for the "generate Gherkin-style test steps" phase - takes an
+        already fully-detailed test case (scenario, params, request/response)
+        and asks the model only to narrate it as Given/When/Then/And lines,
+        not to design or modify any of the test case's actual content.
+        """
+
+        template = cls.load_prompt("generate_test_steps.md")
+
+        test_case_payload = {
+            "endpoint": endpoint,
+            "method": method,
+            **{
+                k: test_case.get(k, {})
+                for k in (
+                    "test_scenario", "path_params", "query_params",
+                    "headers", "request_data", "files", "expected_response",
+                )
+            },
+        }
+
+        variables = {"TEST_CASE": json.dumps(test_case_payload, indent=2)}
+
+        return cls.render(template, variables)

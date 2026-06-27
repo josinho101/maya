@@ -7,6 +7,9 @@ import {
   Tabs, Tab, Badge, Select, MenuItem,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
+import UnfoldLessIcon from "@mui/icons-material/UnfoldLess";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
@@ -34,8 +37,10 @@ import AddTestCaseDialog from "../components/AddTestCaseDialog";
 import RegenerateDialog from "../components/RegenerateDialog";
 import ClosableDialogTitle from "../components/ClosableDialogTitle";
 import AddEnvironmentDialog from "../components/AddEnvironmentDialog";
+import Toast from "../components/Toast";
 
-const POLLING_STATUSES = ["PENDING", "GENERATING"];
+const POLLING_STATUSES = ["PENDING", "GENERATING", "SCENARIOS_READY", "GENERATING_STEPS"];
+const STEPS_PHASE_STATUSES = ["SCENARIOS_READY", "GENERATING_STEPS"];
 const ACTIVE_JOB_STATUSES = ["QUEUED", "RUNNING"];
 const VALID_TABS = ["all", "needs_review", "active", "completed", "environments"];
 const METHOD_COLOR = { GET: "info", POST: "success", PUT: "warning", PATCH: "warning", DELETE: "error" };
@@ -70,6 +75,10 @@ export default function GenerationPage() {
   const [scenarioJobs, setScenarioJobs] = useState([]);
   const jobsPollRef = useRef(null);
 
+  const [collapsedSteps, setCollapsedSteps] = useState(new Set());
+  const [toast, setToast] = useState({ open: false, message: "" });
+  const stepsToastFiredRef = useRef(false);
+
   const [environments, setEnvironments] = useState([]);
   const [selectedEnvId, setSelectedEnvId] = useState("");
   const [addEnvOpen, setAddEnvOpen] = useState(false);
@@ -88,29 +97,42 @@ export default function GenerationPage() {
 
   useEffect(() => { fetchEnvironments(); }, [fetchEnvironments]);
 
+  // Fires once, the first time this generation is observed having entered
+  // the steps phase - covers both the 3s poll noticing the transition and a
+  // fresh page load landing mid-phase after a refresh.
+  const applyGenUpdate = useCallback((data) => {
+    setGen(data);
+    if (data && STEPS_PHASE_STATUSES.includes(data.status) && !stepsToastFiredRef.current) {
+      stepsToastFiredRef.current = true;
+      setToast({ open: true, message: "All test scenarios generated — generating test steps now" });
+    }
+    return data;
+  }, []);
+
   const fetchGen = useCallback(async () => {
     try {
       const data = await getGeneration(projectId, genId);
-      setGen(data);
+      applyGenUpdate(data);
       return data;
     } catch {
       setError("Failed to load generation");
     } finally {
       setLoading(false);
     }
-  }, [projectId, genId]);
+  }, [projectId, genId, applyGenUpdate]);
 
   useEffect(() => {
+    stepsToastFiredRef.current = false;
     fetchGen().then((data) => {
       if (data && POLLING_STATUSES.includes(data.status)) {
         pollRef.current = setInterval(async () => {
           const d = await getGeneration(projectId, genId).catch(() => null);
-          if (d) { setGen(d); if (!POLLING_STATUSES.includes(d.status)) clearInterval(pollRef.current); }
+          if (d) { applyGenUpdate(d); if (!POLLING_STATUSES.includes(d.status)) clearInterval(pollRef.current); }
         }, 3000);
       }
     });
     return () => clearInterval(pollRef.current);
-  }, [projectId, genId, fetchGen]);
+  }, [projectId, genId, fetchGen, applyGenUpdate]);
 
   // A "From Scenario" job can add a test case to this generation in the
   // background without changing gen.status, so the effect above alone won't
@@ -290,6 +312,21 @@ export default function GenerationPage() {
   const completedJobs = scenarioJobs.filter((j) => ["DONE", "FAILED", "CANCELLED"].includes(j.status));
   const progress = gen?.progress;
 
+  const allTcIds = results.flatMap((r) => (r.test_cases || []).map((tc) => tc.tc_id));
+  const allStepsCollapsed = allTcIds.length > 0 && allTcIds.every((id) => collapsedSteps.has(id));
+
+  const toggleStepsCollapsed = (tcId) => {
+    setCollapsedSteps((prev) => {
+      const next = new Set(prev);
+      if (next.has(tcId)) next.delete(tcId); else next.add(tcId);
+      return next;
+    });
+  };
+
+  const toggleAllStepsCollapsed = () => {
+    setCollapsedSteps(allStepsCollapsed ? new Set() : new Set(allTcIds));
+  };
+
   return (
     <Box>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -328,7 +365,10 @@ export default function GenerationPage() {
           <CardContent>
             <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <Typography fontWeight={600} gutterBottom>
-                {gen.status === "PENDING" ? "Queued..." : "Generating test cases....."}
+                {gen.status === "PENDING" && "Queued..."}
+                {gen.status === "GENERATING" && "Generating test cases....."}
+                {gen.status === "SCENARIOS_READY" && "Scenarios ready, starting step generation..."}
+                {gen.status === "GENERATING_STEPS" && "Generating test steps....."}
               </Typography>
               {isAdmin && (
                 <Button
@@ -349,7 +389,7 @@ export default function GenerationPage() {
                 />
                 <Box sx={{ display: "flex", justifyContent: "space-between", mt: 0.5 }}>
                   <Typography variant="caption" color="text.secondary">
-                    {progress.completed} of {progress.total} endpoints
+                    {progress.completed} of {progress.total} {gen.status === "GENERATING_STEPS" ? "test cases" : "endpoints"}
                   </Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ fontFamily: "monospace" }}>
                     {progress.current}
@@ -442,6 +482,16 @@ export default function GenerationPage() {
                 {approvedTc} test cases across {results.length} endpoints
               </Typography>
               <Box sx={{ ml: "auto", display: "flex", gap: 1, alignItems: "center" }}>
+                {approvedTc > 0 && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={allStepsCollapsed ? <UnfoldMoreIcon fontSize="small" /> : <UnfoldLessIcon fontSize="small" />}
+                    onClick={toggleAllStepsCollapsed}
+                  >
+                    {allStepsCollapsed ? "Expand All Steps" : "Collapse All Steps"}
+                  </Button>
+                )}
                 {approvedTc > 0 && (
                   <TextField
                     size="small"
@@ -636,7 +686,8 @@ export default function GenerationPage() {
                       <TableHead>
                         <TableRow>
                           <TableCell sx={{ width: 110 }}>TC ID</TableCell>
-                          <TableCell>Scenario</TableCell>
+                          <TableCell sx={{ width: 280 }}>Scenario</TableCell>
+                          <TableCell sx={{ width: 320 }}>Steps</TableCell>
                           <TableCell sx={{ width: 130 }}>Role</TableCell>
                           <TableCell sx={{ width: 140 }}>Expected Status</TableCell>
                           <TableCell align="right" sx={{ width: 100 }}>Actions</TableCell>
@@ -651,6 +702,24 @@ export default function GenerationPage() {
                               {tc.source === "manual" && (
                                 <Chip label="manual" size="small" variant="outlined" sx={{ ml: 1 }} />
                               )}
+                            </TableCell>
+                            <TableCell sx={{ overflowWrap: "break-word" }}>
+                              <Box sx={{ display: "flex", alignItems: "flex-start", gap: 0.5 }}>
+                                <IconButton size="small" onClick={() => toggleStepsCollapsed(tc.tc_id)} sx={{ mt: -0.5 }}>
+                                  {collapsedSteps.has(tc.tc_id) ? <ExpandMoreIcon fontSize="small" /> : <ExpandLessIcon fontSize="small" />}
+                                </IconButton>
+                                {tc.steps_error ? (
+                                  <Chip label="steps failed" size="small" color="warning" variant="outlined" />
+                                ) : !collapsedSteps.has(tc.tc_id) && (
+                                  <Box sx={{ fontFamily: "monospace", fontSize: 12 }}>
+                                    {(tc.steps || []).map((line, i) => (
+                                      <Typography key={i} variant="inherit" component="div" sx={{ overflowWrap: "break-word" }}>
+                                        {line}
+                                      </Typography>
+                                    ))}
+                                  </Box>
+                                )}
+                              </Box>
                             </TableCell>
                             <TableCell>
                               <Chip
@@ -784,6 +853,12 @@ export default function GenerationPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Toast
+        open={toast.open}
+        message={toast.message}
+        onClose={() => setToast((t) => ({ ...t, open: false }))}
+      />
     </Box>
   );
 }

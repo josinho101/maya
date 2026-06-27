@@ -113,9 +113,15 @@ def _run_generation(slug, gen_id, parsed_json_path, output_dir, existing_testcas
         g["progress"] = {"completed": completed, "total": total, "current": f"{method} {endpoint}"}
         _save_generation(slug, g)
 
+    def _steps_progress(completed, total, tc_id):
+        g = get_generation(slug, gen_id)
+        g["progress"] = {"completed": completed, "total": total, "current": tc_id}
+        _save_generation(slug, g)
+
     try:
         from llm.core.llm_client import LLMClient
         from testcase_generator.testcase_generator import TestcaseGenerator
+        from testcase_generator.step_generator import generate_steps_for_all
         from storage.testcase_storage import TestCaseStorage
 
         if not endpoints_to_regenerate:
@@ -132,12 +138,34 @@ def _run_generation(slug, gen_id, parsed_json_path, output_dir, existing_testcas
             progress_callback=_progress,
             stop_check=lambda: get_generation(slug, gen_id).get("stop_requested", False),
         )
+
+        gen = get_generation(slug, gen_id)
+        # Only narrate steps if scenario generation wasn't stopped - skip
+        # straight to saving the partial results otherwise, same as before
+        # this second phase existed.
+        if not gen.get("stop_requested", False):
+            gen["status"] = "SCENARIOS_READY"
+            _save_generation(slug, gen)
+
+            gen["status"] = "GENERATING_STEPS"
+            gen["progress"] = None
+            _save_generation(slug, gen)
+
+            result = generate_steps_for_all(
+                llm, result,
+                progress_callback=_steps_progress,
+                stop_check=lambda: get_generation(slug, gen_id).get("stop_requested", False),
+            )
+
+        # testcases_path is only set below, after both phases - the
+        # generation doesn't reach REVIEW, and nothing is exposed to the UI,
+        # until step narration has also finished.
         saved_file = TestCaseStorage.save(output_dir, result)
 
         gen = get_generation(slug, gen_id)
         # stop_requested may have been set while the last endpoint's LLM call
-        # was already in flight - re-check now rather than trusting the value
-        # captured before generate_test_cases() ran.
+        # or the last test case's step-narration call was already in flight -
+        # re-check now rather than trusting an earlier snapshot.
         stopped = gen.get("stop_requested", False)
         gen["status"] = "STOPPED" if stopped else "REVIEW"
         gen["completed_at"] = datetime.now(timezone.utc).isoformat()
@@ -445,7 +473,7 @@ def list_testcase_files(project_id, gen_id):
 def request_stop_generation(project_id, gen_id):
     p, gen = _get_project_and_generation(project_id, gen_id)
 
-    if gen["status"] not in ("PENDING", "GENERATING"):
+    if gen["status"] not in ("PENDING", "GENERATING", "SCENARIOS_READY", "GENERATING_STEPS"):
         raise BadRequest(f"cannot stop generation in status '{gen['status']}'")
 
     gen["stop_requested"] = True

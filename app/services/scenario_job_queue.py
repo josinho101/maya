@@ -93,7 +93,9 @@ def _process_job(slug, job_id):
     # app modules import generations_controller before this one is loaded.
     from app.controllers import generations_controller
     from llm.core.llm_client import LLMClient
+    from llm.core.exceptions import LLMResponseError
     from testcase_generator.scenario_generator import generate_from_scenario
+    from testcase_generator.step_generator import generate_steps_for_testcase
 
     job = get_job(slug, job_id)
     if job is None:
@@ -146,6 +148,15 @@ def _process_job(slug, job_id):
                 "Scenario job %s cancelled after its LLM call finished - discarding draft", job_id
             )
             return
+
+        try:
+            draft["steps"] = generate_steps_for_testcase(llm, draft, job["endpoint"], job["method"])
+        except LLMResponseError as e:
+            # The scenario+detail draft above already succeeded - a failure
+            # narrating it as steps shouldn't fail the whole job, just leave
+            # it without steps.
+            draft["steps"] = []
+            draft["steps_error"] = str(e)
 
         saved_tc = generations_controller.add_testcase(
             job["project_id"], job["gen_id"], job["endpoint"], job["method"], draft
