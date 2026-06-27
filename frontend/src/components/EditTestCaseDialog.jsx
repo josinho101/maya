@@ -32,6 +32,26 @@ export function JsonField({ label, value, onChange }) {
   );
 }
 
+export function StepsField({ label, value, onChange }) {
+  const [raw, setRaw] = useState((value || []).join("\n"));
+  const handleChange = (v) => {
+    setRaw(v);
+    const steps = v.split("\n");
+    while (steps.length && steps[steps.length - 1].trim() === "") steps.pop();
+    onChange(steps);
+  };
+  return (
+    <Box sx={{ mb: 2 }}>
+      <TextField
+        label={label} fullWidth multiline minRows={3}
+        value={raw} onChange={(e) => handleChange(e.target.value)}
+        helperText="One step per line"
+        inputProps={{ style: { fontFamily: "monospace", fontSize: 13 } }}
+      />
+    </Box>
+  );
+}
+
 export default function EditTestCaseDialog({ open, tc, endpoint, method, projectId, genId, onClose, onSave }) {
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -104,24 +124,18 @@ export default function EditTestCaseDialog({ open, tc, endpoint, method, project
         />
         <JsonField label="Expected Response" value={form.expected_response || {}}
           onChange={(v) => setForm({ ...form, expected_response: v })} />
-        {(form.steps?.length > 0 || form.steps_error) && (
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+        <Box sx={{ mb: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+            <Typography variant="subtitle2" color="text.secondary">
               Test Steps
             </Typography>
-            {form.steps_error ? (
+            {form.steps_error && (
               <Chip label="steps generation failed" size="small" color="warning" variant="outlined" />
-            ) : (
-              <Box sx={{ fontFamily: "monospace", fontSize: 13, bgcolor: "action.hover", p: 1.5, borderRadius: 1 }}>
-                {form.steps.map((line, i) => (
-                  <Typography key={i} variant="inherit" component="div" sx={{ overflowWrap: "break-word" }}>
-                    {line}
-                  </Typography>
-                ))}
-              </Box>
             )}
           </Box>
-        )}
+          <StepsField label="Steps" value={form.steps || []}
+            onChange={(steps) => setForm({ ...form, steps })} />
+        </Box>
       </DialogContent>
       <DialogActions>
         <Button variant="outlined" onClick={onClose}>Cancel</Button>

@@ -3,7 +3,7 @@ import {
   Box, Button, CircularProgress, Alert, Dialog,
   DialogContent, DialogActions, TextField, MenuItem, Tabs, Tab,
 } from "@mui/material";
-import { JsonField } from "./EditTestCaseDialog";
+import { JsonField, StepsField } from "./EditTestCaseDialog";
 import FileFieldEditor from "./FileFieldEditor";
 import ClosableDialogTitle from "./ClosableDialogTitle";
 import { addTestCase, getTestcaseSample, submitScenarioJob } from "../api/client";
@@ -19,6 +19,7 @@ const BLANK_FORM = {
   request_data: {},
   files: {},
   expected_response: { status_code: 200, required_fields: [], field_types: {} },
+  steps: [],
 };
 
 export default function AddTestCaseDialog({ open, projectId, genId, results, onClose, onAdded, onScenarioQueued }) {
@@ -175,6 +176,8 @@ export default function AddTestCaseDialog({ open, projectId, genId, results, onC
             />
             <JsonField label="Expected Response" value={form.expected_response || {}}
               onChange={(v) => setForm({ ...form, expected_response: v })} />
+            <StepsField label="Steps" value={form.steps || []}
+              onChange={(steps) => setForm({ ...form, steps })} />
           </>
         )}
 

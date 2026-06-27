@@ -685,10 +685,9 @@ export default function GenerationPage() {
                     <Table size="small" sx={{ tableLayout: "fixed" }}>
                       <TableHead>
                         <TableRow>
-                          <TableCell sx={{ width: 110 }}>TC ID</TableCell>
-                          <TableCell sx={{ width: 280 }}>Scenario</TableCell>
-                          <TableCell sx={{ width: 400 }}>Steps</TableCell>
-                          <TableCell sx={{ width: 130 }}>Role</TableCell>
+                          <TableCell sx={{ width: 120 }}>TC ID</TableCell>
+                          <TableCell sx={{ width: 650 }}>Testcase</TableCell>
+                          <TableCell sx={{ width: 150 }}>Role</TableCell>
                           <TableCell sx={{ width: 70 }}>Expected Status</TableCell>
                           <TableCell align="right" sx={{ width: 90 }}>Actions</TableCell>
                         </TableRow>
@@ -698,20 +697,24 @@ export default function GenerationPage() {
                           <TableRow key={tc.tc_id} hover>
                             <TableCell sx={{ fontFamily: "monospace", fontSize: 12, overflowWrap: "break-word" }}>{tc.tc_id}</TableCell>
                             <TableCell sx={{ overflowWrap: "break-word" }}>
-                              {tc.test_scenario}
-                              {tc.source === "manual" && (
-                                <Chip label="manual" size="small" variant="outlined" sx={{ ml: 1 }} />
-                              )}
-                            </TableCell>
-                            <TableCell sx={{ overflowWrap: "break-word" }}>
-                              <Box sx={{ display: "flex", alignItems: "flex-start", gap: 0.5 }}>
-                                <IconButton size="small" onClick={() => toggleStepsCollapsed(tc.tc_id)} sx={{ mt: -0.5 }}>
-                                  {collapsedSteps.has(tc.tc_id) ? <ExpandMoreIcon fontSize="small" /> : <ExpandLessIcon fontSize="small" />}
-                                </IconButton>
-                                {tc.steps_error ? (
-                                  <Chip label="steps failed" size="small" color="warning" variant="outlined" />
-                                ) : !collapsedSteps.has(tc.tc_id) && (
-                                  <Box sx={{ fontFamily: "monospace", fontSize: 12 }}>
+                              <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                Scenario: {tc.test_scenario}
+                                {tc.source === "manual" && (
+                                  <Chip label="manual" size="small" variant="outlined" sx={{ ml: 1 }} />
+                                )}
+                              </Typography>
+                              <Box>
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 700 }}>Steps:</Typography>
+                                  {tc.steps_error && (
+                                    <Chip label="steps failed" size="small" color="warning" variant="outlined" />
+                                  )}
+                                  <IconButton size="small" onClick={() => toggleStepsCollapsed(tc.tc_id)}>
+                                    {collapsedSteps.has(tc.tc_id) ? <ExpandMoreIcon fontSize="small" /> : <ExpandLessIcon fontSize="small" />}
+                                  </IconButton>
+                                </Box>
+                                {!collapsedSteps.has(tc.tc_id) && !tc.steps_error && (
+                                  <Box sx={{ fontFamily: "monospace", fontSize: 12, pl: 4.5 }}>
                                     {(tc.steps || []).map((line, i) => (
                                       <Typography key={i} variant="inherit" component="div" sx={{ overflowWrap: "break-word" }}>
                                         {line}
