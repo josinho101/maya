@@ -687,10 +687,10 @@ export default function GenerationPage() {
                         <TableRow>
                           <TableCell sx={{ width: 110 }}>TC ID</TableCell>
                           <TableCell sx={{ width: 280 }}>Scenario</TableCell>
-                          <TableCell sx={{ width: 320 }}>Steps</TableCell>
+                          <TableCell sx={{ width: 400 }}>Steps</TableCell>
                           <TableCell sx={{ width: 130 }}>Role</TableCell>
-                          <TableCell sx={{ width: 140 }}>Expected Status</TableCell>
-                          <TableCell align="right" sx={{ width: 100 }}>Actions</TableCell>
+                          <TableCell sx={{ width: 70 }}>Expected Status</TableCell>
+                          <TableCell align="right" sx={{ width: 90 }}>Actions</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
