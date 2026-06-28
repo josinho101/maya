@@ -16,6 +16,7 @@ def create_app():
 
     app.config["SWAGGER"] = {
         "title": "API Test Automation Framework",
+        "openapi": "3.0.3",
         "uiversion": 3,
         "specs_route": "/swagger/",
         "specs": [
@@ -26,14 +27,19 @@ def create_app():
         ],
     }
     Flasgger(app, template={
-        "securityDefinitions": {
-            "Bearer": {
-                "type": "apiKey",
-                "name": "Authorization",
-                "in": "header",
-                "description": "JWT token issued by /api/auth/login, sent as 'Bearer <token>'",
+        "servers": [
+            {"url": "http://localhost:8080", "description": "Local"},
+        ],
+        "components": {
+            "securitySchemes": {
+                "Bearer": {
+                    "type": "http",
+                    "scheme": "bearer",
+                    "bearerFormat": "JWT",
+                    "description": "JWT token issued by /api/auth/login. Paste only the raw token (Swagger UI adds the 'Bearer ' prefix automatically).",
+                }
             }
-        }
+        },
     })
 
     from app.middleware.logging import register_request_logging

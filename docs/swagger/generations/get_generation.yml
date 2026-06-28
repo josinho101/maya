@@ -7,34 +7,38 @@ security:
 parameters:
   - in: path
     name: project_id
-    type: string
     required: true
+    schema:
+      type: string
   - in: path
     name: gen_id
-    type: string
     required: true
+    schema:
+      type: string
 responses:
   200:
     description: Generation details
-    schema:
-      type: object
-      properties:
-        id: {type: string}
-        project_id: {type: string}
-        status: {type: string, enum: [PENDING, GENERATING, SCENARIOS_READY, GENERATING_STEPS, REVIEW, APPROVED, STOPPED, FAILED]}
-        created_at: {type: string, format: date-time}
-        completed_at: {type: string, format: date-time}
-        error: {type: string}
-        progress:
+    content:
+      application/json:
+        schema:
           type: object
           properties:
-            completed: {type: integer}
-            total: {type: integer}
-            current: {type: string}
-        testcases:
-          type: array
-          items: {type: object}
-          description: Present only when status is REVIEW or APPROVED
+            id: {type: string}
+            project_id: {type: string}
+            status: {type: string, enum: [PENDING, GENERATING, SCENARIOS_READY, GENERATING_STEPS, REVIEW, APPROVED, STOPPED, FAILED]}
+            created_at: {type: string, format: date-time}
+            completed_at: {type: string, format: date-time}
+            error: {type: string}
+            progress:
+              type: object
+              properties:
+                completed: {type: integer}
+                total: {type: integer}
+                current: {type: string}
+            testcases:
+              type: array
+              items: {type: object}
+              description: Present only when status is REVIEW or APPROVED
   401:
     description: Authentication required
   404:

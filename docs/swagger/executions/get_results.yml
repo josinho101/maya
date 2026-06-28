@@ -6,31 +6,35 @@ security:
 parameters:
   - in: path
     name: project_id
-    type: string
     required: true
+    schema:
+      type: string
   - in: path
     name: exec_id
-    type: string
     required: true
+    schema:
+      type: string
 responses:
   200:
     description: Array of per-test-case execution results
-    schema:
-      type: array
-      items:
-        type: object
-        properties:
-          tc_id: {type: string}
-          test_scenario: {type: string}
-          lifecycle_role: {type: string}
-          status: {type: string, enum: [PASS, FAIL, SKIPPED]}
-          expected_status_code: {type: integer}
-          actual_status_code: {type: integer}
-          execution_time_ms: {type: number}
-          response_body: {type: string}
-          validation_details:
-            type: array
-            items: {type: object}
+    content:
+      application/json:
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              tc_id: {type: string}
+              test_scenario: {type: string}
+              lifecycle_role: {type: string}
+              status: {type: string, enum: [PASS, FAIL, SKIPPED]}
+              expected_status_code: {type: integer}
+              actual_status_code: {type: integer}
+              execution_time_ms: {type: number}
+              response_body: {type: string}
+              validation_details:
+                type: array
+                items: {type: object}
   401:
     description: Authentication required
   404:

@@ -1,37 +1,39 @@
 tags:
   - Projects
 summary: Update a project's name and/or description
-consumes:
-  - application/json
 security:
   - Bearer: []
 parameters:
   - in: path
     name: project_id
-    type: string
-    required: true
-  - in: body
-    name: body
     required: true
     schema:
-      type: object
-      properties:
-        name:
-          type: string
-        description:
-          type: string
+      type: string
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          name:
+            type: string
+          description:
+            type: string
 responses:
   200:
     description: Updated project
-    schema:
-      type: object
-      properties:
-        id: {type: string}
-        name: {type: string}
-        slug: {type: string}
-        description: {type: string}
-        created_at: {type: string, format: date-time}
-        updated_at: {type: string, format: date-time}
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            id: {type: string}
+            name: {type: string}
+            slug: {type: string}
+            description: {type: string}
+            created_at: {type: string, format: date-time}
+            updated_at: {type: string, format: date-time}
   400:
     description: Invalid update payload
   401:

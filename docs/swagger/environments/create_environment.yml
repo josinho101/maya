@@ -2,36 +2,38 @@ tags:
   - Environments
 summary: Create a manual environment
 description: Adds a manually-defined base URL environment (as opposed to one auto-synced from a swagger spec's servers list).
-consumes:
-  - application/json
 security:
   - Bearer: []
 parameters:
   - in: path
     name: project_id
-    type: string
-    required: true
-  - in: body
-    name: body
     required: true
     schema:
-      type: object
-      required: [name, url]
-      properties:
-        name: {type: string}
-        url: {type: string}
+      type: string
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        required: [name, url]
+        properties:
+          name: {type: string}
+          url: {type: string}
 responses:
   201:
     description: Updated list of environments, including the new one
-    schema:
-      type: array
-      items:
-        type: object
-        properties:
-          id: {type: string}
-          name: {type: string}
-          url: {type: string}
-          source: {type: string, enum: [manual]}
+    content:
+      application/json:
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              id: {type: string}
+              name: {type: string}
+              url: {type: string}
+              source: {type: string, enum: [manual]}
   400:
     description: Missing name/url or invalid URL
   401:

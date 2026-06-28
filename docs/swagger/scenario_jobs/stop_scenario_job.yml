@@ -7,21 +7,25 @@ security:
 parameters:
   - in: path
     name: project_id
-    type: string
     required: true
+    schema:
+      type: string
   - in: path
     name: job_id
-    type: string
     required: true
+    schema:
+      type: string
 responses:
   202:
     description: Stop requested
-    schema:
-      type: object
-      properties:
-        id: {type: string}
-        status: {type: string}
-        stop_requested: {type: boolean}
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            id: {type: string}
+            status: {type: string}
+            stop_requested: {type: boolean}
   400:
     description: Job has already finished (DONE/FAILED/CANCELLED)
   401:

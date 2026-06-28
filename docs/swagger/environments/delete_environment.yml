@@ -7,24 +7,28 @@ security:
 parameters:
   - in: path
     name: project_id
-    type: string
     required: true
+    schema:
+      type: string
   - in: path
     name: env_id
-    type: string
     required: true
+    schema:
+      type: string
 responses:
   200:
     description: Updated list of environments with the given one removed
-    schema:
-      type: array
-      items:
-        type: object
-        properties:
-          id: {type: string}
-          name: {type: string}
-          url: {type: string}
-          source: {type: string, enum: [swagger, manual]}
+    content:
+      application/json:
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              id: {type: string}
+              name: {type: string}
+              url: {type: string}
+              source: {type: string, enum: [swagger, manual]}
   400:
     description: Environment is swagger-sourced and cannot be deleted
   401:

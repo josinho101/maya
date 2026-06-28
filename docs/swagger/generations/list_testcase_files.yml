@@ -6,24 +6,28 @@ security:
 parameters:
   - in: path
     name: project_id
-    type: string
     required: true
+    schema:
+      type: string
   - in: path
     name: gen_id
-    type: string
     required: true
+    schema:
+      type: string
 responses:
   200:
     description: Array of uploaded files (empty if none uploaded yet)
-    schema:
-      type: array
-      items:
-        type: object
-        properties:
-          path: {type: string}
-          name: {type: string}
-          size: {type: integer}
-          uploaded_at: {type: string, format: date-time}
+    content:
+      application/json:
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              path: {type: string}
+              name: {type: string}
+              size: {type: integer}
+              uploaded_at: {type: string, format: date-time}
   401:
     description: Authentication required
   403:

@@ -7,13 +7,15 @@ security:
 responses:
   200:
     description: Current user info
-    schema:
-      type: object
-      properties:
-        username:
-          type: string
-        role:
-          type: string
-          enum: [admin, user]
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            username:
+              type: string
+            role:
+              type: string
+              enum: [admin, user]
   401:
     description: Authentication required

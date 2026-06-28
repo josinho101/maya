@@ -6,22 +6,25 @@ security:
 parameters:
   - in: path
     name: project_id
-    type: string
     required: true
+    schema:
+      type: string
 responses:
   200:
     description: Array of generations, most recent first
-    schema:
-      type: array
-      items:
-        type: object
-        properties:
-          id: {type: string}
-          project_id: {type: string}
-          status: {type: string, enum: [PENDING, GENERATING, SCENARIOS_READY, GENERATING_STEPS, REVIEW, APPROVED, STOPPED, FAILED]}
-          created_at: {type: string, format: date-time}
-          completed_at: {type: string, format: date-time}
-          error: {type: string}
+    content:
+      application/json:
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              id: {type: string}
+              project_id: {type: string}
+              status: {type: string, enum: [PENDING, GENERATING, SCENARIOS_READY, GENERATING_STEPS, REVIEW, APPROVED, STOPPED, FAILED]}
+              created_at: {type: string, format: date-time}
+              completed_at: {type: string, format: date-time}
+              error: {type: string}
   401:
     description: Authentication required
   404:

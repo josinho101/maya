@@ -7,21 +7,25 @@ security:
 parameters:
   - in: path
     name: project_id
-    type: string
     required: true
+    schema:
+      type: string
   - in: path
     name: gen_id
-    type: string
     required: true
+    schema:
+      type: string
 responses:
   202:
     description: Stop requested
-    schema:
-      type: object
-      properties:
-        id: {type: string}
-        status: {type: string}
-        stop_requested: {type: boolean, enum: [true]}
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            id: {type: string}
+            status: {type: string}
+            stop_requested: {type: boolean, enum: [true]}
   400:
     description: Generation is not in a stoppable state (PENDING/GENERATING/SCENARIOS_READY/GENERATING_STEPS)
   401:

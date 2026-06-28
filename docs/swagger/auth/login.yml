@@ -2,32 +2,32 @@ tags:
   - Auth
 summary: Log in and obtain a JWT
 description: Validates username/password against the configured user list and returns a signed JWT (24h expiry by default) along with the user's role.
-consumes:
-  - application/json
-parameters:
-  - in: body
-    name: body
-    required: true
-    schema:
-      type: object
-      required: [username, password]
-      properties:
-        username:
-          type: string
-        password:
-          type: string
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        required: [username, password]
+        properties:
+          username:
+            type: string
+          password:
+            type: string
 responses:
   200:
     description: Login successful
-    schema:
-      type: object
-      properties:
-        token:
-          type: string
-        username:
-          type: string
-        role:
-          type: string
-          enum: [admin, user]
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            token:
+              type: string
+            username:
+              type: string
+            role:
+              type: string
+              enum: [admin, user]
   400:
     description: Invalid username or password

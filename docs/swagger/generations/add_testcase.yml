@@ -2,54 +2,57 @@ tags:
   - Generations
 summary: Manually add a test case to a generation
 description: Adds a hand-written test case for a given endpoint/method. Saved with source="manual" and needs_review=false (manual test cases are considered already reviewed).
-consumes:
-  - application/json
 security:
   - Bearer: []
 parameters:
   - in: path
     name: project_id
-    type: string
-    required: true
-  - in: path
-    name: gen_id
-    type: string
-    required: true
-  - in: body
-    name: body
     required: true
     schema:
-      type: object
-      required: [endpoint, method, test_scenario]
-      properties:
-        endpoint: {type: string}
-        method: {type: string}
-        test_scenario: {type: string}
-        lifecycle_role:
-          type: string
-          enum: [independent, create, read, update, delete, verify_create, verify_update, verify_delete]
-        path_params: {type: object}
-        query_params: {type: object}
-        headers: {type: object}
-        request_data: {type: object}
-        files: {type: object}
-        expected_response:
-          type: object
-          properties:
-            status_code: {type: integer}
-            required_fields: {type: array, items: {type: string}}
-            field_types: {type: object}
+      type: string
+  - in: path
+    name: gen_id
+    required: true
+    schema:
+      type: string
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        required: [endpoint, method, test_scenario]
+        properties:
+          endpoint: {type: string}
+          method: {type: string}
+          test_scenario: {type: string}
+          lifecycle_role:
+            type: string
+            enum: [independent, create, read, update, delete, verify_create, verify_update, verify_delete]
+          path_params: {type: object}
+          query_params: {type: object}
+          headers: {type: object}
+          request_data: {type: object}
+          files: {type: object}
+          expected_response:
+            type: object
+            properties:
+              status_code: {type: integer}
+              required_fields: {type: array, items: {type: string}}
+              field_types: {type: object}
 responses:
   201:
     description: Test case added
-    schema:
-      type: object
-      properties:
-        tc_id: {type: string}
-        test_scenario: {type: string}
-        lifecycle_role: {type: string}
-        source: {type: string, enum: [manual]}
-        needs_review: {type: boolean, enum: [false]}
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            tc_id: {type: string}
+            test_scenario: {type: string}
+            lifecycle_role: {type: string}
+            source: {type: string, enum: [manual]}
+            needs_review: {type: boolean, enum: [false]}
   400:
     description: Missing endpoint/method or test case failed validation
   401:

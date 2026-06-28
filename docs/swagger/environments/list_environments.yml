@@ -6,20 +6,23 @@ security:
 parameters:
   - in: path
     name: project_id
-    type: string
     required: true
+    schema:
+      type: string
 responses:
   200:
     description: Array of environments
-    schema:
-      type: array
-      items:
-        type: object
-        properties:
-          id: {type: string}
-          name: {type: string}
-          url: {type: string}
-          source: {type: string, enum: [swagger, manual]}
+    content:
+      application/json:
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              id: {type: string}
+              name: {type: string}
+              url: {type: string}
+              source: {type: string, enum: [swagger, manual]}
   401:
     description: Authentication required
   404:

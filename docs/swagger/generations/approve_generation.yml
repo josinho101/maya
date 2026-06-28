@@ -7,20 +7,24 @@ security:
 parameters:
   - in: path
     name: project_id
-    type: string
     required: true
+    schema:
+      type: string
   - in: path
     name: gen_id
-    type: string
     required: true
+    schema:
+      type: string
 responses:
   200:
     description: Generation approved
-    schema:
-      type: object
-      properties:
-        status: {type: string, enum: [APPROVED]}
-        generation_id: {type: string}
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            status: {type: string, enum: [APPROVED]}
+            generation_id: {type: string}
   400:
     description: Generation is not in a state that can be approved (e.g. still generating)
   401:

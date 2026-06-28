@@ -2,35 +2,38 @@ tags:
   - Executions
 summary: Execute an approved generation
 description: Starts an asynchronous execution run against the given environment (or the project's first environment if none specified). The generation must be APPROVED.
-consumes:
-  - application/json
 security:
   - Bearer: []
 parameters:
   - in: path
     name: project_id
-    type: string
     required: true
+    schema:
+      type: string
   - in: path
     name: gen_id
-    type: string
     required: true
-  - in: body
-    name: body
-    required: false
     schema:
-      type: object
-      properties:
-        environment_id:
-          type: string
+      type: string
+requestBody:
+  required: false
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          environment_id:
+            type: string
 responses:
   202:
     description: Execution started
-    schema:
-      type: object
-      properties:
-        execution_id: {type: string}
-        status: {type: string, enum: [PENDING]}
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            execution_id: {type: string}
+            status: {type: string, enum: [PENDING]}
   400:
     description: Generation is not APPROVED, or environment_id does not match any environment
   401:

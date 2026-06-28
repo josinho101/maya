@@ -6,24 +6,29 @@ security:
 parameters:
   - in: path
     name: project_id
-    type: string
     required: true
+    schema:
+      type: string
   - in: path
     name: gen_id
-    type: string
     required: true
+    schema:
+      type: string
   - in: path
     name: tc_id
-    type: string
     required: true
+    schema:
+      type: string
 responses:
   200:
     description: Test case deleted
-    schema:
-      type: object
-      properties:
-        deleted:
-          type: string
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            deleted:
+              type: string
   401:
     description: Authentication required
   403:

@@ -2,34 +2,34 @@ tags:
   - Projects
 summary: Create a new project
 description: Creates a project and derives a URL-safe slug from its name. Requires admin role.
-consumes:
-  - application/json
 security:
   - Bearer: []
-parameters:
-  - in: body
-    name: body
-    required: true
-    schema:
-      type: object
-      required: [name]
-      properties:
-        name:
-          type: string
-        description:
-          type: string
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        required: [name]
+        properties:
+          name:
+            type: string
+          description:
+            type: string
 responses:
   201:
     description: Project created
-    schema:
-      type: object
-      properties:
-        id: {type: string}
-        name: {type: string}
-        slug: {type: string}
-        description: {type: string}
-        created_at: {type: string, format: date-time}
-        updated_at: {type: string, format: date-time}
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            id: {type: string}
+            name: {type: string}
+            slug: {type: string}
+            description: {type: string}
+            created_at: {type: string, format: date-time}
+            updated_at: {type: string, format: date-time}
   400:
     description: Name is missing or empty
   401:

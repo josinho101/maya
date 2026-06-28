@@ -5,16 +5,20 @@ description: Public route (no authentication) that streams the generated HTML re
 parameters:
   - in: path
     name: project_id
-    type: string
     required: true
+    schema:
+      type: string
   - in: path
     name: exec_id
-    type: string
     required: true
-produces:
-  - text/html
+    schema:
+      type: string
 responses:
   200:
     description: HTML report file
+    content:
+      text/html:
+        schema:
+          type: string
   404:
     description: Report is not available yet (execution hasn't completed, or doesn't exist)

@@ -2,43 +2,46 @@ tags:
   - Scenario Jobs
 summary: Submit a scenario for async test case generation
 description: Queues a background job that generates a single test case from a natural-language scenario description, scoped to one endpoint/method. Poll the job via GET to see its status.
-consumes:
-  - application/json
 security:
   - Bearer: []
 parameters:
   - in: path
     name: project_id
-    type: string
-    required: true
-  - in: path
-    name: gen_id
-    type: string
-    required: true
-  - in: body
-    name: body
     required: true
     schema:
-      type: object
-      required: [endpoint, method, scenario]
-      properties:
-        endpoint: {type: string}
-        method: {type: string}
-        scenario: {type: string}
-        files:
-          type: object
-          description: Optional map of field name to uploaded file path, overriding any LLM-generated file content
+      type: string
+  - in: path
+    name: gen_id
+    required: true
+    schema:
+      type: string
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        required: [endpoint, method, scenario]
+        properties:
+          endpoint: {type: string}
+          method: {type: string}
+          scenario: {type: string}
+          files:
+            type: object
+            description: Optional map of field name to uploaded file path, overriding any LLM-generated file content
 responses:
   202:
     description: Job queued
-    schema:
-      type: object
-      properties:
-        id: {type: string}
-        endpoint: {type: string}
-        method: {type: string}
-        scenario: {type: string}
-        status: {type: string, enum: [QUEUED]}
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            id: {type: string}
+            endpoint: {type: string}
+            method: {type: string}
+            scenario: {type: string}
+            status: {type: string, enum: [QUEUED]}
   400:
     description: Missing endpoint/method/scenario
   401:

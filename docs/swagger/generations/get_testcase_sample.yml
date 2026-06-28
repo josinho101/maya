@@ -7,31 +7,37 @@ security:
 parameters:
   - in: path
     name: project_id
-    type: string
     required: true
+    schema:
+      type: string
   - in: path
     name: gen_id
-    type: string
     required: true
+    schema:
+      type: string
   - in: query
     name: endpoint
-    type: string
     required: true
+    schema:
+      type: string
   - in: query
     name: method
-    type: string
     required: true
+    schema:
+      type: string
 responses:
   200:
     description: Sample test case skeleton
-    schema:
-      type: object
-      properties:
-        sample: {type: object}
-        file_fields:
-          type: array
-          items: {type: string}
-        accepts_file: {type: boolean}
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            sample: {type: object}
+            file_fields:
+              type: array
+              items: {type: string}
+            accepts_file: {type: boolean}
   400:
     description: Missing endpoint or method query parameter
   401:
