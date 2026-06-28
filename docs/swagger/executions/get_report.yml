@@ -1,0 +1,20 @@
+tags:
+  - Executions
+summary: Download the HTML execution report
+description: Public route (no authentication) that streams the generated HTML report file for an execution.
+parameters:
+  - in: path
+    name: project_id
+    type: string
+    required: true
+  - in: path
+    name: exec_id
+    type: string
+    required: true
+produces:
+  - text/html
+responses:
+  200:
+    description: HTML report file
+  404:
+    description: Report is not available yet (execution hasn't completed, or doesn't exist)

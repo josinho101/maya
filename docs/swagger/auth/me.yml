@@ -1,0 +1,19 @@
+tags:
+  - Auth
+summary: Get the current authenticated user
+description: Returns the username and role decoded from the caller's JWT.
+security:
+  - Bearer: []
+responses:
+  200:
+    description: Current user info
+    schema:
+      type: object
+      properties:
+        username:
+          type: string
+        role:
+          type: string
+          enum: [admin, user]
+  401:
+    description: Authentication required

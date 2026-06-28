@@ -1,0 +1,39 @@
+tags:
+  - Generations
+summary: Trigger AI-driven test case generation
+description: Starts an asynchronous generation run (LLM-driven, positive/negative/boundary/required-field categories) for all endpoints, or only the given subset. Requires a swagger spec to already be uploaded.
+consumes:
+  - application/json
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    type: string
+    required: true
+  - in: body
+    name: body
+    required: false
+    schema:
+      type: object
+      properties:
+        endpoints_to_regenerate:
+          type: array
+          items: {type: string}
+          description: Optional list of endpoint keys to regenerate; omit to regenerate everything.
+responses:
+  202:
+    description: Generation started
+    schema:
+      type: object
+      properties:
+        generation_id: {type: string}
+        status: {type: string, enum: [PENDING]}
+  400:
+    description: No swagger spec has been uploaded for this project yet
+  401:
+    description: Authentication required
+  403:
+    description: Admin access required
+  404:
+    description: Project not found

@@ -1,0 +1,32 @@
+tags:
+  - Generations
+summary: Delete a test case
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    type: string
+    required: true
+  - in: path
+    name: gen_id
+    type: string
+    required: true
+  - in: path
+    name: tc_id
+    type: string
+    required: true
+responses:
+  200:
+    description: Test case deleted
+    schema:
+      type: object
+      properties:
+        deleted:
+          type: string
+  401:
+    description: Authentication required
+  403:
+    description: Admin access required
+  404:
+    description: Test case not found

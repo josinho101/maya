@@ -1,0 +1,30 @@
+tags:
+  - Generations
+summary: List uploaded test data files for a generation
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    type: string
+    required: true
+  - in: path
+    name: gen_id
+    type: string
+    required: true
+responses:
+  200:
+    description: Array of uploaded files (empty if none uploaded yet)
+    schema:
+      type: array
+      items:
+        type: object
+        properties:
+          path: {type: string}
+          name: {type: string}
+          size: {type: integer}
+          uploaded_at: {type: string, format: date-time}
+  401:
+    description: Authentication required
+  403:
+    description: Admin access required

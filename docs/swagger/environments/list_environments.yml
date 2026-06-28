@@ -1,0 +1,26 @@
+tags:
+  - Environments
+summary: List all environments for a project
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    type: string
+    required: true
+responses:
+  200:
+    description: Array of environments
+    schema:
+      type: array
+      items:
+        type: object
+        properties:
+          id: {type: string}
+          name: {type: string}
+          url: {type: string}
+          source: {type: string, enum: [swagger, manual]}
+  401:
+    description: Authentication required
+  404:
+    description: Project not found

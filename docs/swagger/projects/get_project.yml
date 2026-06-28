@@ -1,0 +1,30 @@
+tags:
+  - Projects
+summary: Get a single project
+description: Returns project details along with generation/execution counts and swagger metadata (if a spec has been uploaded).
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    type: string
+    required: true
+responses:
+  200:
+    description: Project details
+    schema:
+      type: object
+      properties:
+        id: {type: string}
+        name: {type: string}
+        slug: {type: string}
+        description: {type: string}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+        generation_count: {type: integer}
+        execution_count: {type: integer}
+        swagger: {type: object}
+  401:
+    description: Authentication required
+  404:
+    description: Project not found

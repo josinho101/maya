@@ -1,0 +1,32 @@
+tags:
+  - Generations
+summary: Request that an in-progress generation stop
+description: Sets a stop flag checked by the background generation worker; the generation transitions to STOPPED once the worker observes it.
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    type: string
+    required: true
+  - in: path
+    name: gen_id
+    type: string
+    required: true
+responses:
+  202:
+    description: Stop requested
+    schema:
+      type: object
+      properties:
+        id: {type: string}
+        status: {type: string}
+        stop_requested: {type: boolean, enum: [true]}
+  400:
+    description: Generation is not in a stoppable state (PENDING/GENERATING/SCENARIOS_READY/GENERATING_STEPS)
+  401:
+    description: Authentication required
+  403:
+    description: Admin access required
+  404:
+    description: Project or generation not found

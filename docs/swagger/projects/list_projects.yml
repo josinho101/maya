@@ -1,0 +1,21 @@
+tags:
+  - Projects
+summary: List all projects
+security:
+  - Bearer: []
+responses:
+  200:
+    description: Array of projects
+    schema:
+      type: array
+      items:
+        type: object
+        properties:
+          id: {type: string}
+          name: {type: string}
+          slug: {type: string}
+          description: {type: string}
+          created_at: {type: string, format: date-time}
+          updated_at: {type: string, format: date-time}
+  401:
+    description: Authentication required

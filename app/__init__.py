@@ -1,4 +1,5 @@
 import os
+from flasgger import Flasgger
 from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
@@ -12,6 +13,28 @@ def create_app():
 
     app = Flask(__name__, static_folder=static_folder, static_url_path="")
     CORS(app)
+
+    app.config["SWAGGER"] = {
+        "title": "API Test Automation Framework",
+        "uiversion": 3,
+        "specs_route": "/swagger/",
+        "specs": [
+            {
+                "endpoint": "swagger",
+                "route": "/swagger.json",
+            }
+        ],
+    }
+    Flasgger(app, template={
+        "securityDefinitions": {
+            "Bearer": {
+                "type": "apiKey",
+                "name": "Authorization",
+                "in": "header",
+                "description": "JWT token issued by /api/auth/login, sent as 'Bearer <token>'",
+            }
+        }
+    })
 
     from app.middleware.logging import register_request_logging
     register_request_logging(app)

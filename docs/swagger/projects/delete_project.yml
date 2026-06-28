@@ -1,0 +1,25 @@
+tags:
+  - Projects
+summary: Delete a project
+description: Deletes the project record and all associated data (swagger spec, generations, executions, uploads).
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    type: string
+    required: true
+responses:
+  200:
+    description: Project deleted
+    schema:
+      type: object
+      properties:
+        deleted:
+          type: string
+  401:
+    description: Authentication required
+  403:
+    description: Admin access required
+  404:
+    description: Project not found

@@ -1,0 +1,34 @@
+tags:
+  - Generations
+summary: Approve a single test case
+description: Marks one test case as reviewed (needs_review=false). If this was the last unreviewed test case in the generation, the generation's status transitions to APPROVED.
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    type: string
+    required: true
+  - in: path
+    name: gen_id
+    type: string
+    required: true
+  - in: path
+    name: tc_id
+    type: string
+    required: true
+responses:
+  200:
+    description: Test case approved
+    schema:
+      type: object
+      properties:
+        tc_id: {type: string}
+        needs_review: {type: boolean, enum: [false]}
+        generation_status: {type: string, enum: [REVIEW, APPROVED]}
+  401:
+    description: Authentication required
+  403:
+    description: Admin access required
+  404:
+    description: Test case not found

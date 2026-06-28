@@ -1,0 +1,42 @@
+tags:
+  - Generations
+summary: Get a sample test case skeleton for an endpoint
+description: Builds a schema-derived sample (no LLM call) for the manual "add test case" dialog, including which fields are file uploads.
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    type: string
+    required: true
+  - in: path
+    name: gen_id
+    type: string
+    required: true
+  - in: query
+    name: endpoint
+    type: string
+    required: true
+  - in: query
+    name: method
+    type: string
+    required: true
+responses:
+  200:
+    description: Sample test case skeleton
+    schema:
+      type: object
+      properties:
+        sample: {type: object}
+        file_fields:
+          type: array
+          items: {type: string}
+        accepts_file: {type: boolean}
+  400:
+    description: Missing endpoint or method query parameter
+  401:
+    description: Authentication required
+  403:
+    description: Admin access required
+  404:
+    description: Endpoint not found in the parsed spec

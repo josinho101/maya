@@ -1,0 +1,54 @@
+tags:
+  - Generations
+summary: Edit an existing test case
+description: Replaces a test case's fields. Editing always sets needs_review=false, since a human has now reviewed/modified it.
+consumes:
+  - application/json
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    type: string
+    required: true
+  - in: path
+    name: gen_id
+    type: string
+    required: true
+  - in: path
+    name: tc_id
+    type: string
+    required: true
+  - in: body
+    name: body
+    required: true
+    schema:
+      type: object
+      properties:
+        test_scenario: {type: string}
+        lifecycle_role:
+          type: string
+          enum: [independent, create, read, update, delete, verify_create, verify_update, verify_delete]
+        path_params: {type: object}
+        query_params: {type: object}
+        headers: {type: object}
+        request_data: {type: object}
+        files: {type: object}
+        expected_response: {type: object}
+responses:
+  200:
+    description: Updated test case
+    schema:
+      type: object
+      properties:
+        tc_id: {type: string}
+        test_scenario: {type: string}
+        needs_review: {type: boolean, enum: [false]}
+  400:
+    description: Missing or invalid body
+  401:
+    description: Authentication required
+  403:
+    description: Admin access required
+  404:
+    description: Test case not found

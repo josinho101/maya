@@ -1,0 +1,45 @@
+tags:
+  - Environments
+summary: Bulk rename environments
+description: Renames one or more existing environments (swagger-sourced or manual) by id.
+consumes:
+  - application/json
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    type: string
+    required: true
+  - in: body
+    name: body
+    required: true
+    schema:
+      type: object
+      required: [environments]
+      properties:
+        environments:
+          type: array
+          items:
+            type: object
+            properties:
+              id: {type: string}
+              name: {type: string}
+responses:
+  200:
+    description: Updated list of environments
+    schema:
+      type: array
+      items:
+        type: object
+        properties:
+          id: {type: string}
+          name: {type: string}
+          url: {type: string}
+          source: {type: string, enum: [swagger, manual]}
+  400:
+    description: Invalid environments payload
+  401:
+    description: Authentication required
+  404:
+    description: Project not found

@@ -1,0 +1,28 @@
+tags:
+  - Executions
+summary: List all executions for a project
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    type: string
+    required: true
+responses:
+  200:
+    description: Array of executions, most recently started first
+    schema:
+      type: array
+      items:
+        type: object
+        properties:
+          id: {type: string}
+          project_id: {type: string}
+          generation_id: {type: string}
+          status: {type: string, enum: [PENDING, RUNNING, COMPLETED, FAILED]}
+          started_at: {type: string, format: date-time}
+          completed_at: {type: string, format: date-time}
+  401:
+    description: Authentication required
+  404:
+    description: Project not found

@@ -1,0 +1,33 @@
+tags:
+  - Environments
+summary: Delete a manual environment
+description: Only manual environments can be deleted; swagger-sourced environments are tied to the spec and cannot be removed this way.
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    type: string
+    required: true
+  - in: path
+    name: env_id
+    type: string
+    required: true
+responses:
+  200:
+    description: Updated list of environments with the given one removed
+    schema:
+      type: array
+      items:
+        type: object
+        properties:
+          id: {type: string}
+          name: {type: string}
+          url: {type: string}
+          source: {type: string, enum: [swagger, manual]}
+  400:
+    description: Environment is swagger-sourced and cannot be deleted
+  401:
+    description: Authentication required
+  404:
+    description: Project or environment not found

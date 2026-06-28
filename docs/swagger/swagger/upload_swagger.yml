@@ -1,0 +1,47 @@
+tags:
+  - Swagger
+summary: Upload a Swagger/OpenAPI spec file
+description: Parses the uploaded spec (Swagger 2.0 or OpenAPI 3.0), computes per-endpoint hashes for change detection, and syncs environments from the spec's declared servers.
+consumes:
+  - multipart/form-data
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    type: string
+    required: true
+  - in: formData
+    name: file
+    type: file
+    required: true
+    description: ".yaml, .yml, or .json spec file"
+responses:
+  201:
+    description: Spec uploaded and parsed
+    schema:
+      type: object
+      properties:
+        filename: {type: string}
+        file_path: {type: string}
+        uploaded_at: {type: string, format: date-time}
+        parsed_at: {type: string, format: date-time}
+        endpoint_count: {type: integer}
+        output_dir: {type: string}
+        parsed_json_path: {type: string}
+        base_url: {type: string}
+        environments:
+          type: array
+          items: {type: object}
+        needs_env_naming: {type: boolean}
+        no_servers_found: {type: boolean}
+  400:
+    description: Missing file or unsupported file extension
+  401:
+    description: Authentication required
+  403:
+    description: Admin access required
+  404:
+    description: Project not found
+  500:
+    description: Spec could not be parsed

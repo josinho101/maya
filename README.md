@@ -84,16 +84,32 @@ server.py              Flask web server entry point
    ```
    The Flask API starts on `http://localhost:8080`.
 
-4. **Run the frontend (dev mode)**
+5. **Run the frontend (dev mode)**
    ```
    cd frontend
    npm install
    npm run dev
    ```
 
-5. **Log in** with one of the default accounts from `configs/settings.py` (change these, and the JWT secret, before any production use):
+6. **Log in** with one of the default accounts from `configs/settings.py` (change these, and the JWT secret, before any production use):
    - `admin` / `admin123` (admin role)
    - `viewer` / `viewer123` (viewer role)
+
+## Swagger UI
+
+With the backend running, the full REST API documentation (parameters, request/response schemas, and status codes for every endpoint) is available at:
+
+```
+http://localhost:8080/swagger/
+```
+
+The raw OpenAPI spec (used by the UI above) is served as JSON at:
+
+```
+http://localhost:8080/swagger.json
+```
+
+Most endpoints require a Bearer JWT — use the "Authorize" button in the UI and paste the token returned from `POST /api/auth/login` as `Bearer <token>`. Doc content lives separately from the route code, under `docs/swagger/`.
 
 ## Documentation
 

@@ -1,0 +1,44 @@
+tags:
+  - Executions
+summary: Get a single execution
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    type: string
+    required: true
+  - in: path
+    name: exec_id
+    type: string
+    required: true
+responses:
+  200:
+    description: Execution details
+    schema:
+      type: object
+      properties:
+        id: {type: string}
+        project_id: {type: string}
+        generation_id: {type: string}
+        status: {type: string, enum: [PENDING, RUNNING, COMPLETED, FAILED]}
+        started_at: {type: string, format: date-time}
+        completed_at: {type: string, format: date-time}
+        report_html: {type: string}
+        report_json: {type: string}
+        error: {type: string}
+        environment_id: {type: string}
+        environment_name: {type: string}
+        base_url: {type: string}
+        summary:
+          type: object
+          properties:
+            total: {type: integer}
+            passed: {type: integer}
+            failed: {type: integer}
+            skipped: {type: integer}
+            success_rate: {type: number}
+  401:
+    description: Authentication required
+  404:
+    description: Project or execution not found

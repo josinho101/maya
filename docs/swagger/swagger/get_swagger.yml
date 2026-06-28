@@ -1,0 +1,26 @@
+tags:
+  - Swagger
+summary: Get the uploaded swagger metadata for a project
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    type: string
+    required: true
+responses:
+  200:
+    description: Swagger metadata
+    schema:
+      type: object
+      properties:
+        filename: {type: string}
+        file_path: {type: string}
+        uploaded_at: {type: string, format: date-time}
+        parsed_at: {type: string, format: date-time}
+        endpoint_count: {type: integer}
+        base_url: {type: string}
+  401:
+    description: Authentication required
+  404:
+    description: No swagger spec has been uploaded for this project

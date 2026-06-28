@@ -1,0 +1,31 @@
+tags:
+  - Generations
+summary: Approve all test cases in a generation
+description: Bulk-marks every test case as reviewed and transitions the generation's status to APPROVED. A generation must be APPROVED before it can be executed.
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    type: string
+    required: true
+  - in: path
+    name: gen_id
+    type: string
+    required: true
+responses:
+  200:
+    description: Generation approved
+    schema:
+      type: object
+      properties:
+        status: {type: string, enum: [APPROVED]}
+        generation_id: {type: string}
+  400:
+    description: Generation is not in a state that can be approved (e.g. still generating)
+  401:
+    description: Authentication required
+  403:
+    description: Admin access required
+  404:
+    description: Project or generation not found
