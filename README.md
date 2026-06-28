@@ -87,3 +87,8 @@ server.py              Flask web server entry point
 5. **Log in** with one of the default accounts from `configs/settings.py` (change these, and the JWT secret, before any production use):
    - `admin` / `admin123` (admin role)
    - `viewer` / `viewer123` (viewer role)
+
+## Documentation
+
+- [Features](./docs/features.md) — detailed description of every feature in the app
+- [Technical Reference](./docs/tech.md) — class diagrams, sequence diagrams, data models
