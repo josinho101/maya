@@ -1,0 +1,22 @@
+tags:
+  - Classes
+summary: List all classes
+description: Returns the 10 hardcoded classes. Read-only.
+security:
+  - Bearer: []
+responses:
+  200:
+    description: Array of classes
+    content:
+      application/json:
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              id: {type: string, example: C1}
+              name: {type: string, example: "Class 1"}
+              subject: {type: string, example: Mathematics}
+              teacher_id: {type: string, example: T1}
+  401:
+    description: Authentication required

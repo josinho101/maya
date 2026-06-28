@@ -1,0 +1,28 @@
+tags:
+  - Teachers
+summary: Get a teacher by id
+security:
+  - Bearer: []
+parameters:
+  - name: teacher_id
+    in: path
+    required: true
+    schema: {type: string}
+    example: T1
+responses:
+  200:
+    description: Teacher detail, including photo_url
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            id: {type: string}
+            name: {type: string}
+            email: {type: string}
+            subject: {type: string}
+            photo_url: {type: string, nullable: true}
+  401:
+    description: Authentication required
+  404:
+    description: Teacher not found

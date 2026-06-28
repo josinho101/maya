@@ -1,0 +1,48 @@
+tags:
+  - Teachers
+summary: Update a teacher
+description: Requires admin role. name, email, and subject are all mandatory.
+security:
+  - Bearer: []
+parameters:
+  - name: teacher_id
+    in: path
+    required: true
+    schema: {type: string}
+    example: T1
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        required: [name, email, subject]
+        properties:
+          name:
+            type: string
+          email:
+            type: string
+            description: Must be unique among teachers (excluding this teacher).
+          subject:
+            type: string
+responses:
+  200:
+    description: Teacher updated
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            id: {type: string}
+            name: {type: string}
+            email: {type: string}
+            subject: {type: string}
+            photo_url: {type: string, nullable: true}
+  400:
+    description: name/email/subject missing or invalid, or email already in use
+  401:
+    description: Authentication required
+  403:
+    description: Admin access required
+  404:
+    description: Teacher not found

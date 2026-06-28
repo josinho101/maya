@@ -1,0 +1,17 @@
+tags:
+  - Auth
+summary: Get the current authenticated user
+security:
+  - Bearer: []
+responses:
+  200:
+    description: Current user info
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            username: {type: string}
+            role: {type: string, enum: [admin, user]}
+  401:
+    description: Authentication required

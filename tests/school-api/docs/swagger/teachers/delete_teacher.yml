@@ -1,0 +1,27 @@
+tags:
+  - Teachers
+summary: Delete a teacher
+description: Requires admin role. Also deletes the teacher's uploaded photo file, if any.
+security:
+  - Bearer: []
+parameters:
+  - name: teacher_id
+    in: path
+    required: true
+    schema: {type: string}
+    example: T1
+responses:
+  200:
+    description: Teacher deleted
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            deleted: {type: string}
+  401:
+    description: Authentication required
+  403:
+    description: Admin access required
+  404:
+    description: Teacher not found

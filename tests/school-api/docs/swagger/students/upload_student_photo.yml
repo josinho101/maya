@@ -1,0 +1,41 @@
+tags:
+  - Students
+summary: Upload a student's photo
+description: Requires admin role. Accepts a single jpg, jpeg, or png file under the "photo" form field. Replaces any existing photo for this student. Files are stored in the uploads/ folder, which is cleared on every app restart.
+security:
+  - Bearer: []
+parameters:
+  - name: student_id
+    in: path
+    required: true
+    schema: {type: string}
+    example: S1
+requestBody:
+  required: true
+  content:
+    multipart/form-data:
+      schema:
+        type: object
+        required: [photo]
+        properties:
+          photo:
+            type: string
+            format: binary
+            description: jpg, jpeg, or png file only.
+responses:
+  200:
+    description: Photo uploaded
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            photo_url: {type: string, example: /uploads/student_S1.jpg}
+  400:
+    description: photo file is missing or not a jpg/jpeg/png file
+  401:
+    description: Authentication required
+  403:
+    description: Admin access required
+  404:
+    description: Student not found

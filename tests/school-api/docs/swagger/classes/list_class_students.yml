@@ -1,0 +1,31 @@
+tags:
+  - Classes
+summary: List students enrolled in a class
+security:
+  - Bearer: []
+parameters:
+  - name: class_id
+    in: path
+    required: true
+    schema: {type: string}
+    example: C1
+responses:
+  200:
+    description: Array of students in the class
+    content:
+      application/json:
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              id: {type: string}
+              name: {type: string}
+              email: {type: string}
+              age: {type: integer, nullable: true}
+              class_id: {type: string, nullable: true}
+              photo_url: {type: string, nullable: true}
+  401:
+    description: Authentication required
+  404:
+    description: Class not found

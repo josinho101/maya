@@ -1,0 +1,43 @@
+tags:
+  - Teachers
+summary: Create a teacher
+description: Requires admin role. name, email, and subject are all mandatory.
+security:
+  - Bearer: []
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        required: [name, email, subject]
+        properties:
+          name:
+            type: string
+            example: Alan Turing
+          email:
+            type: string
+            example: alan.turing@school.test
+            description: Must be unique among teachers.
+          subject:
+            type: string
+            example: Mathematics
+responses:
+  201:
+    description: Teacher created
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            id: {type: string}
+            name: {type: string}
+            email: {type: string}
+            subject: {type: string}
+            photo_url: {type: string, nullable: true}
+  400:
+    description: name/email/subject missing or invalid, or email already in use
+  401:
+    description: Authentication required
+  403:
+    description: Admin access required

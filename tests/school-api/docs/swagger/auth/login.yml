@@ -1,0 +1,31 @@
+tags:
+  - Auth
+summary: Log in and obtain a JWT
+description: Validates credentials against the 6 hardcoded users and returns a signed JWT valid for 24 hours.
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        required: [username, password]
+        properties:
+          username:
+            type: string
+            example: admin1
+          password:
+            type: string
+            example: admin123
+responses:
+  200:
+    description: Login successful
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            token: {type: string}
+            username: {type: string}
+            role: {type: string, enum: [admin, user]}
+  400:
+    description: Invalid username or password

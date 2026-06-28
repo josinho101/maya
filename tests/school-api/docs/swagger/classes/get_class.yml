@@ -1,0 +1,27 @@
+tags:
+  - Classes
+summary: Get a single class by id
+security:
+  - Bearer: []
+parameters:
+  - name: class_id
+    in: path
+    required: true
+    schema: {type: string}
+    example: C1
+responses:
+  200:
+    description: Class detail
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            id: {type: string}
+            name: {type: string}
+            subject: {type: string}
+            teacher_id: {type: string}
+  401:
+    description: Authentication required
+  404:
+    description: Class not found

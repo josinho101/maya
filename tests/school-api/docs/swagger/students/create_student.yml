@@ -1,0 +1,50 @@
+tags:
+  - Students
+summary: Create a student
+description: Requires admin role. name and email are mandatory; age and class_id are optional.
+security:
+  - Bearer: []
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        required: [name, email]
+        properties:
+          name:
+            type: string
+            example: Liam Smith
+          email:
+            type: string
+            example: liam.smith@school.test
+            description: Must be unique among students.
+          age:
+            type: integer
+            nullable: true
+            example: 14
+          class_id:
+            type: string
+            nullable: true
+            example: C1
+            description: Must reference an existing class id if provided.
+responses:
+  201:
+    description: Student created
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            id: {type: string}
+            name: {type: string}
+            email: {type: string}
+            age: {type: integer, nullable: true}
+            class_id: {type: string, nullable: true}
+            photo_url: {type: string, nullable: true}
+  400:
+    description: name/email missing or invalid, email already in use, age not a positive integer, or class_id does not exist
+  401:
+    description: Authentication required
+  403:
+    description: Admin access required

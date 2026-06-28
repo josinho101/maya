@@ -1,0 +1,29 @@
+tags:
+  - Students
+summary: Get a student by id
+security:
+  - Bearer: []
+parameters:
+  - name: student_id
+    in: path
+    required: true
+    schema: {type: string}
+    example: S1
+responses:
+  200:
+    description: Student detail, including photo_url
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            id: {type: string}
+            name: {type: string}
+            email: {type: string}
+            age: {type: integer, nullable: true}
+            class_id: {type: string, nullable: true}
+            photo_url: {type: string, nullable: true}
+  401:
+    description: Authentication required
+  404:
+    description: Student not found
