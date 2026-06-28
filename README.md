@@ -115,3 +115,18 @@ Most endpoints require a Bearer JWT — use the "Authorize" button in the UI and
 
 - [Features](./docs/features.md) — detailed description of every feature in the app
 - [Technical Reference](./docs/tech.md) — class diagrams, sequence diagrams, data models
+
+## Test App: School API
+
+A standalone Flask test app — a "School API" demoing students, teachers, and classes — lives at [tests/school-api](./tests/school-api). It runs independently of the main app, with its own virtual environment, port, and in-memory data.
+
+```
+cd tests/school-api
+python -m venv venv
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # macOS/Linux
+pip install -r requirements.txt
+python server.py
+```
+
+The API starts on `http://localhost:8070`. Swagger UI is at `http://localhost:8070/swagger/` (spec at `/swagger.json`). See [tests/school-api/README.md](./tests/school-api/README.md) for the hardcoded user accounts and full endpoint details.
