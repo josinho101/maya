@@ -64,14 +64,21 @@ server.py              Flask web server entry point
 
 ## Local Setup
 
-1. **Install backend dependencies**
+1. **Create and activate a virtual environment**
+   ```
+   python -m venv venv
+   ```
+   - Windows: `venv\Scripts\activate`
+   - macOS/Linux: `source venv/bin/activate`
+
+2. **Install backend dependencies**
    ```
    pip install -r requirements.txt
    ```
 
-2. **Start Ollama** and make sure the model from `configs/settings.py` (`qwen3.5:9b` by default) is pulled.
+3. **Start Ollama** and make sure the model from `configs/settings.py` (`qwen3.5:9b` by default) is pulled.
 
-3. **Run the web app**
+4. **Run the web app** (with the virtual environment active)
    ```
    python server.py
    ```
