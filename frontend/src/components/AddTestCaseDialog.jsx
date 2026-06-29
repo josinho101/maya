@@ -3,6 +3,7 @@ import {
   Box, Button, CircularProgress, Alert, Dialog,
   DialogContent, DialogActions, TextField, MenuItem, Tabs, Tab,
 } from "@mui/material";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
 import { JsonField, StepsField } from "./EditTestCaseDialog";
 import FileFieldEditor from "./FileFieldEditor";
 import ClosableDialogTitle from "./ClosableDialogTitle";
@@ -30,6 +31,7 @@ export default function AddTestCaseDialog({ open, projectId, genId, results, onC
   const [acceptsFile, setAcceptsFile] = useState(false);
   const [form, setForm] = useState(BLANK_FORM);
   const [scenarioText, setScenarioText] = useState("");
+  const [scenarioFileName, setScenarioFileName] = useState("");
   const [scenarioFiles, setScenarioFiles] = useState({});
   const [saving, setSaving] = useState(false);
   const [queueing, setQueueing] = useState(false);
@@ -47,6 +49,7 @@ export default function AddTestCaseDialog({ open, projectId, genId, results, onC
     setFileFields([]);
     setAcceptsFile(false);
     setScenarioText("");
+    setScenarioFileName("");
     setScenarioFiles({});
     setQueuedMsg("");
     setErr("");
@@ -89,6 +92,14 @@ export default function AddTestCaseDialog({ open, projectId, genId, results, onC
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleScenarioFileSelect = (file) => {
+    if (!file) return;
+    setScenarioFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = () => setScenarioText(String(reader.result || ""));
+    reader.readAsText(file);
   };
 
   const handleQueueScenario = async () => {
@@ -180,6 +191,23 @@ export default function AddTestCaseDialog({ open, projectId, genId, results, onC
         {tab === "scenario" && (
           <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", pr: 1.5 }}>
             {queuedMsg && <Alert severity="success" sx={{ mb: 2 }}>{queuedMsg}</Alert>}
+            <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1.5 }}>
+              <Button
+                size="small"
+                component="label"
+                variant="outlined"
+                startIcon={<UploadFileIcon fontSize="small" />}
+                disabled={controlsDisabled}
+              >
+                {scenarioFileName || "Scenario From File"}
+                <input
+                  type="file"
+                  hidden
+                  accept=".txt,.md"
+                  onChange={(e) => handleScenarioFileSelect(e.target.files[0])}
+                />
+              </Button>
+            </Box>
             <TextField
               label="Describe the scenario this test case should cover"
               placeholder='e.g. "Creating a student with a duplicate email should fail with 400"'
