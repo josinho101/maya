@@ -22,6 +22,8 @@ def get_current_user():
 def require_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
+        if not settings.AUTH_ENABLED:
+            return f(*args, **kwargs)
         if get_current_user() is None:
             return jsonify({"error": "Authentication required"}), 401
         return f(*args, **kwargs)
@@ -31,6 +33,8 @@ def require_auth(f):
 def require_admin(f):
     @wraps(f)
     def decorated(*args, **kwargs):
+        if not settings.AUTH_ENABLED:
+            return f(*args, **kwargs)
         user = get_current_user()
         if user is None:
             return jsonify({"error": "Authentication required"}), 401

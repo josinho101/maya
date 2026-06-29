@@ -3,6 +3,9 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
 
+# Toggle authentication on/off. When False, all endpoints bypass auth checks.
+AUTH_ENABLED = True
+
 # User accounts — hardcoded for this test app. role must be "admin" or "user".
 USERS = [
     {"username": "admin1", "password": "admin123", "role": "admin"},
