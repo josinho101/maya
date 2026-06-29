@@ -17,13 +17,18 @@ export default function Layout({ children }) {
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <AppBar position="static" elevation={0} sx={{ borderBottom: "1px solid #2A2A4A" }}>
         <Toolbar variant="dense">
-          <BugReportIcon sx={{ mr: 1.5, color: "primary.main" }} />
-          <Typography variant="h6" fontWeight={700} letterSpacing={1}>
-            MAYA
-          </Typography>
-          <Typography variant="caption" sx={{ ml: 1, color: "text.secondary" }}>
-            Test Automation Platform
-          </Typography>
+          <Box
+            sx={{ display: "flex", alignItems: "center", cursor: "pointer" }}
+            onClick={() => nav("/projects")}
+          >
+            <BugReportIcon sx={{ mr: 1.5, color: "warning.main" }} />
+            <Typography variant="h6" fontWeight={700} letterSpacing={1}>
+              MAYA
+            </Typography>
+            <Typography variant="caption" sx={{ ml: 1, color: "text.secondary" }}>
+              Test Automation Platform
+            </Typography>
+          </Box>
 
           <Box sx={{ ml: "auto", display: "flex", alignItems: "center", gap: 1.5 }}>
             {user && (
