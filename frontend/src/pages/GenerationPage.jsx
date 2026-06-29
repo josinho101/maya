@@ -8,8 +8,6 @@ import {
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
-import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
-import UnfoldLessIcon from "@mui/icons-material/UnfoldLess";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
@@ -75,7 +73,7 @@ export default function GenerationPage() {
   const [scenarioJobs, setScenarioJobs] = useState([]);
   const jobsPollRef = useRef(null);
 
-  const [collapsedSteps, setCollapsedSteps] = useState(new Set());
+  const [expandedSteps, setExpandedSteps] = useState(new Set());
   const [toast, setToast] = useState({ open: false, message: "" });
   const stepsToastFiredRef = useRef(false);
 
@@ -312,19 +310,12 @@ export default function GenerationPage() {
   const completedJobs = scenarioJobs.filter((j) => ["DONE", "FAILED", "CANCELLED"].includes(j.status));
   const progress = gen?.progress;
 
-  const allTcIds = results.flatMap((r) => (r.test_cases || []).map((tc) => tc.tc_id));
-  const allStepsCollapsed = allTcIds.length > 0 && allTcIds.every((id) => collapsedSteps.has(id));
-
-  const toggleStepsCollapsed = (tcId) => {
-    setCollapsedSteps((prev) => {
+  const toggleStepsExpanded = (tcId) => {
+    setExpandedSteps((prev) => {
       const next = new Set(prev);
       if (next.has(tcId)) next.delete(tcId); else next.add(tcId);
       return next;
     });
-  };
-
-  const toggleAllStepsCollapsed = () => {
-    setCollapsedSteps(allStepsCollapsed ? new Set() : new Set(allTcIds));
   };
 
   return (
@@ -482,16 +473,6 @@ export default function GenerationPage() {
                 {approvedTc} test cases across {results.length} endpoints
               </Typography>
               <Box sx={{ ml: "auto", display: "flex", gap: 1, alignItems: "center" }}>
-                {approvedTc > 0 && (
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={allStepsCollapsed ? <UnfoldMoreIcon fontSize="small" /> : <UnfoldLessIcon fontSize="small" />}
-                    onClick={toggleAllStepsCollapsed}
-                  >
-                    {allStepsCollapsed ? "Expand All Steps" : "Collapse All Steps"}
-                  </Button>
-                )}
                 {approvedTc > 0 && (
                   <TextField
                     size="small"
@@ -709,11 +690,11 @@ export default function GenerationPage() {
                                   {tc.steps_error && (
                                     <Chip label="steps failed" size="small" color="warning" variant="outlined" />
                                   )}
-                                  <IconButton size="small" onClick={() => toggleStepsCollapsed(tc.tc_id)}>
-                                    {collapsedSteps.has(tc.tc_id) ? <ExpandMoreIcon fontSize="small" /> : <ExpandLessIcon fontSize="small" />}
+                                  <IconButton size="small" onClick={() => toggleStepsExpanded(tc.tc_id)}>
+                                    {expandedSteps.has(tc.tc_id) ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
                                   </IconButton>
                                 </Box>
-                                {!collapsedSteps.has(tc.tc_id) && !tc.steps_error && (
+                                {expandedSteps.has(tc.tc_id) && !tc.steps_error && (
                                   <Box sx={{ fontFamily: "monospace", fontSize: 12, pl: 4.5 }}>
                                     {(tc.steps || []).map((line, i) => (
                                       <Typography key={i} variant="inherit" component="div" sx={{ overflowWrap: "break-word" }}>
