@@ -5,7 +5,7 @@ const STATUS_CONFIG = {
   GENERATING: { color: "warning",  label: "Generating" },
   SCENARIOS_READY:  { color: "info",    label: "Scenarios Ready" },
   GENERATING_STEPS: { color: "warning", label: "Generating Steps" },
-  REVIEW:     { color: "info",     label: "Ready for Review" },
+  REVIEW:     { color: "warning",  label: "Ready for Review" },
   APPROVED:   { color: "success",  label: "Approved" },
   FAILED:     { color: "error",    label: "Failed" },
   STOPPED:    { color: "default",  label: "Stopped" },

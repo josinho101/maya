@@ -178,12 +178,12 @@ export default function AddTestCaseDialog({ open, projectId, genId, results, onC
         )}
 
         {tab === "scenario" && (
-          <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden", pr: 1.5 }}>
+          <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", pr: 1.5 }}>
             {queuedMsg && <Alert severity="success" sx={{ mb: 2 }}>{queuedMsg}</Alert>}
             <TextField
               label="Describe the scenario this test case should cover"
               placeholder='e.g. "Creating a student with a duplicate email should fail with 400"'
-              fullWidth multiline minRows={15} sx={{ mb: 2 }} disabled={controlsDisabled}
+              fullWidth multiline minRows={13} sx={{ mb: 2 }} disabled={controlsDisabled}
               inputProps={{ style: { overflow: "hidden" } }}
               value={scenarioText}
               onChange={(e) => setScenarioText(e.target.value)}
