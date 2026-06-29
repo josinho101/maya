@@ -15,7 +15,7 @@ const basename = (path) => (path ? path.split(/[\\/]/).pop() : path);
 // stored under the project's own output dir (see backend upload-file route),
 // or picked from files already uploaded earlier via the file library so the
 // same file doesn't have to be re-uploaded for every test case that needs it.
-export default function FileFieldEditor({ projectId, genId, files, fileFields, acceptsFile, onChange }) {
+export default function FileFieldEditor({ projectId, genId, files, fileFields, acceptsFile, onChange, disabled }) {
   const [newFieldName, setNewFieldName] = useState("");
   const [uploadingField, setUploadingField] = useState(null);
   const [libraryField, setLibraryField] = useState(null);
@@ -81,6 +81,7 @@ export default function FileFieldEditor({ projectId, genId, files, fileFields, a
                 <Checkbox
                   size="small"
                   checked={included}
+                  disabled={disabled}
                   onChange={(e) => handleToggleInclude(name, e.target.checked)}
                 />
               }
@@ -99,7 +100,7 @@ export default function FileFieldEditor({ projectId, genId, files, fileFields, a
                   size="small"
                   component="label"
                   startIcon={<UploadFileIcon fontSize="small" />}
-                  disabled={uploadingField === name}
+                  disabled={disabled || uploadingField === name}
                 >
                   {files?.[name] ? "Replace" : "Choose file"}
                   <input type="file" hidden onChange={(e) => handleUpload(name, e.target.files[0])} />
@@ -107,6 +108,7 @@ export default function FileFieldEditor({ projectId, genId, files, fileFields, a
                 <Button
                   size="small"
                   startIcon={<FolderOpenIcon fontSize="small" />}
+                  disabled={disabled}
                   onClick={() => setLibraryField(name)}
                 >
                   Browse Library
@@ -122,13 +124,14 @@ export default function FileFieldEditor({ projectId, genId, files, fileFields, a
             size="small"
             placeholder="New file field name"
             value={newFieldName}
+            disabled={disabled}
             onChange={(e) => setNewFieldName(e.target.value)}
             sx={{ width: 200 }}
           />
           <Button
             size="small"
             component="label"
-            disabled={!newFieldName.trim()}
+            disabled={disabled || !newFieldName.trim()}
             startIcon={<UploadFileIcon fontSize="small" />}
           >
             Add file field

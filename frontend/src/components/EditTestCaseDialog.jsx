@@ -12,7 +12,7 @@ const LIFECYCLE_ROLE_COLOR = {
   verify_create: "secondary", verify_update: "secondary", verify_delete: "secondary",
 };
 
-export function JsonField({ label, value, onChange }) {
+export function JsonField({ label, value, onChange, disabled }) {
   const [raw, setRaw] = useState(typeof value === "string" ? value : JSON.stringify(value, null, 2));
   const [err, setErr] = useState("");
   const handleChange = (v) => {
@@ -23,7 +23,7 @@ export function JsonField({ label, value, onChange }) {
   return (
     <Box sx={{ mb: 2 }}>
       <TextField
-        label={label} fullWidth multiline minRows={3}
+        label={label} fullWidth multiline minRows={3} disabled={disabled}
         value={raw} onChange={(e) => handleChange(e.target.value)}
         error={!!err} helperText={err}
         inputProps={{ style: { fontFamily: "monospace", fontSize: 13 } }}
@@ -32,7 +32,7 @@ export function JsonField({ label, value, onChange }) {
   );
 }
 
-export function StepsField({ label, value, onChange }) {
+export function StepsField({ label, value, onChange, disabled }) {
   const [raw, setRaw] = useState((value || []).join("\n"));
   const handleChange = (v) => {
     setRaw(v);
@@ -43,7 +43,7 @@ export function StepsField({ label, value, onChange }) {
   return (
     <Box sx={{ mb: 2 }}>
       <TextField
-        label={label} fullWidth multiline minRows={3}
+        label={label} fullWidth multiline minRows={3} disabled={disabled}
         value={raw} onChange={(e) => handleChange(e.target.value)}
         helperText="One step per line"
         inputProps={{ style: { fontFamily: "monospace", fontSize: 13 } }}

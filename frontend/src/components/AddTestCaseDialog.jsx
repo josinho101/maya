@@ -38,6 +38,7 @@ export default function AddTestCaseDialog({ open, projectId, genId, results, onC
 
   const endpoints = (results || []).map((r) => ({ endpoint: r.endpoint, method: r.method }));
   const [method, endpoint] = target ? target.split("::") : ["", ""];
+  const controlsDisabled = !target || loadingSample;
 
   const reset = () => {
     setTab("manual");
@@ -114,46 +115,40 @@ export default function AddTestCaseDialog({ open, projectId, genId, results, onC
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
       <ClosableDialogTitle onClose={handleClose}>Add Test Case</ClosableDialogTitle>
-      <DialogContent>
+      <DialogContent sx={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {err && <Alert severity="error" sx={{ mb: 2 }}>{err}</Alert>}
 
-        <TextField
-          select
-          label="Endpoint"
-          fullWidth
-          sx={{ mb: 2, mt: 1 }}
-          value={target}
-          onChange={(e) => handleSelectTarget(e.target.value)}
-        >
-          {endpoints.map(({ endpoint: ep, method: m }) => (
-            <MenuItem key={`${m}::${ep}`} value={`${m}::${ep}`}>
-              {m} {ep}
-            </MenuItem>
-          ))}
-        </TextField>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2, mt: 1 }}>
+          <TextField
+            select
+            label="Endpoint"
+            fullWidth
+            value={target}
+            onChange={(e) => handleSelectTarget(e.target.value)}
+          >
+            {endpoints.map(({ endpoint: ep, method: m }) => (
+              <MenuItem key={`${m}::${ep}`} value={`${m}::${ep}`}>
+                {m} {ep}
+              </MenuItem>
+            ))}
+          </TextField>
+          {loadingSample && <CircularProgress size={20} />}
+        </Box>
 
-        {target && (
-          <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
-            <Tab label="Manual" value="manual" />
-            <Tab label="From Scenario" value="scenario" />
-          </Tabs>
-        )}
+        <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
+          <Tab label="Manual" value="manual" />
+          <Tab label="From Scenario" value="scenario" />
+        </Tabs>
 
-        {target && loadingSample && (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
-            <CircularProgress size={28} />
-          </Box>
-        )}
-
-        {target && !loadingSample && tab === "manual" && (
-          <>
+        {tab === "manual" && (
+          <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", pr: 1.5 }}>
             <TextField
-              label="Test Scenario" fullWidth sx={{ mb: 2 }}
+              label="Test Scenario" fullWidth sx={{ mb: 2 }} disabled={controlsDisabled}
               value={form.test_scenario || ""}
               onChange={(e) => setForm({ ...form, test_scenario: e.target.value })}
             />
             <TextField
-              select label="Lifecycle Role" fullWidth sx={{ mb: 2 }}
+              select label="Lifecycle Role" fullWidth sx={{ mb: 2 }} disabled={controlsDisabled}
               value={form.lifecycle_role || "independent"}
               onChange={(e) => setForm({ ...form, lifecycle_role: e.target.value })}
             >
@@ -161,59 +156,62 @@ export default function AddTestCaseDialog({ open, projectId, genId, results, onC
                 <MenuItem key={role} value={role}>{role}</MenuItem>
               ))}
             </TextField>
-            <JsonField label="Path Params" value={form.path_params || {}}
+            <JsonField label="Path Params" value={form.path_params || {}} disabled={controlsDisabled}
               onChange={(v) => setForm({ ...form, path_params: v })} />
-            <JsonField label="Query Params" value={form.query_params || {}}
+            <JsonField label="Query Params" value={form.query_params || {}} disabled={controlsDisabled}
               onChange={(v) => setForm({ ...form, query_params: v })} />
-            <JsonField label="Headers" value={form.headers || {}}
+            <JsonField label="Headers" value={form.headers || {}} disabled={controlsDisabled}
               onChange={(v) => setForm({ ...form, headers: v })} />
-            <JsonField label="Request Data" value={form.request_data || {}}
+            <JsonField label="Request Data" value={form.request_data || {}} disabled={controlsDisabled}
               onChange={(v) => setForm({ ...form, request_data: v })} />
             <FileFieldEditor
               projectId={projectId} genId={genId}
               files={form.files || {}} fileFields={fileFields} acceptsFile={acceptsFile}
+              disabled={controlsDisabled}
               onChange={(files) => setForm({ ...form, files })}
             />
-            <JsonField label="Expected Response" value={form.expected_response || {}}
+            <JsonField label="Expected Response" value={form.expected_response || {}} disabled={controlsDisabled}
               onChange={(v) => setForm({ ...form, expected_response: v })} />
-            <StepsField label="Steps" value={form.steps || []}
+            <StepsField label="Steps" value={form.steps || []} disabled={controlsDisabled}
               onChange={(steps) => setForm({ ...form, steps })} />
-          </>
+          </Box>
         )}
 
-        {target && !loadingSample && tab === "scenario" && (
-          <>
+        {tab === "scenario" && (
+          <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden", pr: 1.5 }}>
             {queuedMsg && <Alert severity="success" sx={{ mb: 2 }}>{queuedMsg}</Alert>}
             <TextField
               label="Describe the scenario this test case should cover"
               placeholder='e.g. "Creating a student with a duplicate email should fail with 400"'
-              fullWidth multiline minRows={4} sx={{ mb: 2 }}
+              fullWidth multiline minRows={15} sx={{ mb: 2 }} disabled={controlsDisabled}
+              inputProps={{ style: { overflow: "hidden" } }}
               value={scenarioText}
               onChange={(e) => setScenarioText(e.target.value)}
             />
             <FileFieldEditor
               projectId={projectId} genId={genId}
               files={scenarioFiles} fileFields={fileFields} acceptsFile={acceptsFile}
+              disabled={controlsDisabled}
               onChange={setScenarioFiles}
             />
             <Alert severity="info" sx={{ mt: 1 }}>
               This testcase generation request will be queued. Once it finishes, it'll show up in the "Needs Review" tab where you can approve, edit or delete it.
             </Alert>
-          </>
+          </Box>
         )}
       </DialogContent>
       <DialogActions>
         <Button variant="outlined" onClick={handleClose}>Close</Button>
-        {target && tab === "manual" && (
-          <Button variant="contained" onClick={handleSaveManual} disabled={saving || loadingSample}>
+        {tab === "manual" && (
+          <Button variant="contained" onClick={handleSaveManual} disabled={controlsDisabled || saving}>
             {saving ? <CircularProgress size={20} /> : "Save"}
           </Button>
         )}
-        {target && tab === "scenario" && (
+        {tab === "scenario" && (
           <Button
             variant="contained"
             onClick={handleQueueScenario}
-            disabled={queueing || loadingSample || !scenarioText.trim()}
+            disabled={controlsDisabled || queueing || !scenarioText.trim()}
           >
             {queueing ? <CircularProgress size={20} /> : "Submit"}
           </Button>
