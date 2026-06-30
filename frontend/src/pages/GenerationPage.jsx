@@ -25,6 +25,7 @@ import DnsIcon from "@mui/icons-material/Dns";
 import PersonIcon from "@mui/icons-material/Person";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import LockIcon from "@mui/icons-material/Lock";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   getGeneration, editTestCase, deleteTestCase, approveGeneration, approveTestCase,
@@ -371,6 +372,7 @@ export default function GenerationPage() {
   const activeJobs = scenarioJobs.filter((j) => ACTIVE_JOB_STATUSES.includes(j.status));
   const completedJobs = scenarioJobs.filter((j) => ["DONE", "FAILED", "CANCELLED"].includes(j.status));
   const progress = gen?.progress;
+  const anyAuthRequired = results.some((r) => r.requires_auth);
 
   const toggleStepsExpanded = (tcId) => {
     setExpandedSteps((prev) => {
@@ -536,6 +538,17 @@ export default function GenerationPage() {
                 {approvedTc} test cases across {results.length} endpoints
               </Typography>
               <Box sx={{ ml: "auto", display: "flex", gap: 1, alignItems: "center" }}>
+                {anyAuthRequired && (
+                  <Chip
+                    icon={<LockIcon fontSize="small" />}
+                    label="Authorize"
+                    size="small"
+                    color="warning"
+                    variant="outlined"                    
+                    sy={{ px: 2 }}
+                    sx={{ px: 1 }}
+                  />
+                )}
                 {approvedTc > 0 && (
                   <TextField
                     size="small"

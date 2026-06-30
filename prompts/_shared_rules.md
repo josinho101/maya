@@ -259,6 +259,7 @@ OUTPUT FORMAT:
     {
       "test_scenario": "",
       "lifecycle_role": "independent",
+      "auth_override": null,
       "path_params": {},
       "query_params": {},
       "headers": {},

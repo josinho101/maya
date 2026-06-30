@@ -24,3 +24,15 @@ drive the create/read/update/delete lifecycle chain.
 
 "Concise" means no filler text, explanations, or commentary outside the JSON — it does not
 mean omitting required fields mandated below.
+
+AUTHENTICATION RULES:
+
+If api_details.requires_auth is true, additionally generate exactly one test case for a
+request sent with no credentials at all ("auth_override": "missing", expecting 401 unless
+the documented responses specify a different status code) and exactly one test case for a
+request sent with an invalid/expired credential ("auth_override": "invalid", expecting 401
+or 403 per the documented responses). Do not generate more than one of each. Do not invent
+header names, token values, or auth mechanisms — this prompt only tells you whether auth
+applies, not how it works. Every other negative test case must omit "auth_override"
+entirely. If api_details.requires_auth is false or absent, never include "auth_override" on
+any test case.

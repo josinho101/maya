@@ -26,6 +26,22 @@ Generate:
 * Boundary test cases
 * Required field validation test cases
 
+AUTHENTICATION RULES:
+
+If api_details.requires_auth is true, additionally generate exactly one
+negative test case for a request sent with no credentials at all
+("auth_override": "missing", expecting 401 unless the documented responses
+specify a different status code) and exactly one negative test case for a
+request sent with an invalid/expired credential ("auth_override": "invalid",
+expecting 401 or 403 per the documented responses). These two count as part
+of the negative test cases, not a separate category — do not generate more
+than one of each. Do not invent header names, token values, or auth
+mechanisms; this prompt only tells you whether auth applies, not how it
+works — that is handled outside this prompt. Every other test case
+(positive, boundary, required field, and ordinary negative cases) must omit
+"auth_override" entirely. If api_details.requires_auth is false or absent,
+never include "auth_override" on any test case.
+
 RESPONSE RULES:
 
 1. Return a single valid JSON object only.
@@ -329,6 +345,7 @@ OUTPUT FORMAT:
     {
       "test_scenario": "",
       "lifecycle_role": "independent",
+      "auth_override": null,
       "path_params": {},
       "query_params": {},
       "headers": {},

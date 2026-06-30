@@ -89,6 +89,7 @@ class PromptBuilder:
         test_case_payload = {
             "endpoint": endpoint,
             "method": method,
+            "auth_override": test_case.get("auth_override"),
             **{
                 k: test_case.get(k, {})
                 for k in (

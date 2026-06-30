@@ -25,6 +25,70 @@ class SwaggerParser:
         with open("Parser/template.json", "r") as file:
             self.template = json.load(file)
 
+    @staticmethod
+    def _normalize_auth_scheme(scheme_name, definition, scopes):
+        """
+        Resolves one named security scheme (from securityDefinitions in
+        Swagger 2.0 or components.securitySchemes in OpenAPI 3.x) into a
+        normalized shape. Swagger 2.0's "basic" type is folded into
+        OpenAPI 3's type="http"/scheme="basic" vocabulary so both spec
+        versions produce the same normalized fields. The raw `definition`
+        is always kept verbatim too, so nothing is lost for types (oauth2,
+        openIdConnect) whose flow/scope structure isn't flattened here.
+        """
+
+        scheme_type = definition.get("type", "")
+
+        if scheme_type == "basic":
+            normalized_type, scheme, bearer_format = "http", "basic", None
+        elif scheme_type == "http":
+            normalized_type = "http"
+            scheme = definition.get("scheme")
+            bearer_format = definition.get("bearerFormat")
+        else:
+            normalized_type, scheme, bearer_format = scheme_type, None, None
+
+        return {
+            "scheme_name": scheme_name,
+            "type": normalized_type,
+            "scheme": scheme,
+            "bearer_format": bearer_format,
+            "in": definition.get("in"),
+            "param_name": definition.get("name"),
+            "scopes": list(scopes) if scopes else [],
+            "definition": definition,
+        }
+
+    @staticmethod
+    def _resolve_auth(security_requirements, security_schemes):
+        """
+        Given a `security` requirement list (e.g. [{"bearerAuth": []}]) and
+        the spec's named-scheme registry, returns (requires_auth,
+        auth_schemes). A non-empty requirement list means auth is required;
+        each named scheme in it is resolved against the registry. Scheme
+        names missing from the registry (malformed spec) are skipped rather
+        than raising, degrading to "requires auth, mechanism unknown".
+        """
+
+        requires_auth = bool(security_requirements)
+
+        auth_schemes = []
+
+        for requirement in security_requirements or []:
+
+            for scheme_name, scopes in requirement.items():
+
+                definition = security_schemes.get(scheme_name)
+
+                if not definition:
+                    continue
+
+                auth_schemes.append(
+                    SwaggerParser._normalize_auth_scheme(scheme_name, definition, scopes)
+                )
+
+        return requires_auth, auth_schemes
+
     def parse(self):
 
         project_name = self.source_data.get("info", {}).get("title", "Unknown Project")
@@ -63,6 +127,13 @@ class SwaggerParser:
 
         paths = self.source_data.get("paths", {})
 
+        security_schemes = (
+            self.source_data.get("components", {}).get("securitySchemes")
+            or self.source_data.get("securityDefinitions", {})
+        )
+
+        global_security = self.source_data.get("security", [])
+
         HTTP_METHODS = {
             "get",
             "post",
@@ -91,6 +162,16 @@ class SwaggerParser:
                     endpoint=endpoint, method=http_method.upper(), details=details
                 )
 
+                op_security = details.get("security")
+
+                effective_security = (
+                    op_security if op_security is not None else global_security
+                )
+
+                requires_auth, auth_schemes = self._resolve_auth(
+                    effective_security, security_schemes
+                )
+
                 if api_sha in self.existing_api_map:
 
                     logger.info(
@@ -101,6 +182,10 @@ class SwaggerParser:
                     existing_api = copy.deepcopy(self.existing_api_map[api_sha])
 
                     existing_api["existing"] = True
+
+                    existing_api.setdefault("api_details", {})["requires_auth"] = requires_auth
+
+                    existing_api["auth_schemes"] = auth_schemes
 
                     apis.append(existing_api)
 
@@ -181,6 +266,10 @@ class SwaggerParser:
                 api_object["api_details"][
                     "response_descriptions"
                 ] = response_descriptions
+
+                api_object["api_details"]["requires_auth"] = requires_auth
+
+                api_object["auth_schemes"] = auth_schemes
 
                 api_object["existing"] = False
 

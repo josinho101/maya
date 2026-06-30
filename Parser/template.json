@@ -19,8 +19,10 @@
         "parameters": [],
         "request_schema": {},
         "response_schema": {},
-        "response_descriptions": {}
+        "response_descriptions": {},
+        "requires_auth": false
       },
+      "auth_schemes": [],
       "existing":""
     }
   ]

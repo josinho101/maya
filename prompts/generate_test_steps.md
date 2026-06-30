@@ -37,15 +37,21 @@ STEP RULES:
 5. One "Given" line per entry in files, in the form:
    Given a file is attached as "<key>"
 
-6. Exactly one "When" line:
+6. If auth_override is "missing", exactly one "Given" line:
+   Given the request is sent without authentication credentials
+   If auth_override is "invalid", exactly one "Given" line:
+   Given the request is sent with an invalid authentication credential
+   If auth_override is null/absent, do not generate this line.
+
+7. Exactly one "When" line:
    When I send a "<METHOD>" request to "<endpoint>"
    Use the endpoint exactly as given below, including any "{param}" placeholders -
    do not substitute path_params values into it.
 
-7. Exactly one "Then" line:
+8. Exactly one "Then" line:
    Then the response status code should be <expected_response.status_code>
 
-8. If expected_response.required_fields is non-empty, one "And" line per field, in the
+9. If expected_response.required_fields is non-empty, one "And" line per field, in the
    form:
    And the response body should contain the field "<field>" with value <value>
    or, when the field's value can't be known ahead of execution (server-generated
@@ -61,12 +67,12 @@ STEP RULES:
      should use the literal-value form instead); "integer"/"number" -> "a positive
      number"; "boolean" -> "a boolean value"; anything else -> "a non-empty value".
 
-9. If expected_response.required_fields is empty, do not generate any "And" lines -
-   the "Then" line for status code is the last line.
+10. If expected_response.required_fields is empty, do not generate any "And" lines -
+    the "Then" line for status code is the last line.
 
-10. Do not invent assertions about anything not present in path_params, query_params,
-    headers, request_data, files, or expected_response below - in particular, never
-    assert response headers, since none are defined here.
+11. Do not invent assertions about anything not present in path_params, query_params,
+    headers, request_data, files, auth_override, or expected_response below - in
+    particular, never assert response headers, since none are defined here.
 
 RESPONSE RULES:
 

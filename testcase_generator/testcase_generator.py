@@ -73,6 +73,8 @@ class TestcaseGenerator:
 
             endpoint = api.get("api_details", {}).get("endpoint", "")
             method = api.get("api_details", {}).get("method", "").upper()
+            requires_auth = api.get("api_details", {}).get("requires_auth", False)
+            auth_schemes = api.get("auth_schemes", [])
             key = (endpoint, method)
 
             try:
@@ -83,7 +85,10 @@ class TestcaseGenerator:
                 if existing_testcases_file and not force:
                     if key in existing_tc_map:
                         logger.info(f"Using existing test cases for {method} {endpoint}")
-                        final_results.append(existing_tc_map[key])
+                        existing_entry = existing_tc_map[key]
+                        existing_entry["requires_auth"] = requires_auth
+                        existing_entry["auth_schemes"] = auth_schemes
+                        final_results.append(existing_entry)
                         if progress_callback:
                             progress_callback(api_index, total, endpoint, method)
                         continue
@@ -108,6 +113,9 @@ class TestcaseGenerator:
                     tc["source"] = "system"
                     tc["needs_review"] = True
 
+                parsed_response["requires_auth"] = requires_auth
+                parsed_response["auth_schemes"] = auth_schemes
+
                 final_results.append(parsed_response)
 
             except Exception as e:
@@ -118,6 +126,8 @@ class TestcaseGenerator:
                         "method": method,
                         "test_cases": [],
                         "error": str(e),
+                        "requires_auth": requires_auth,
+                        "auth_schemes": auth_schemes,
                     }
                 )
 
