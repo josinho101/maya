@@ -22,11 +22,15 @@ import FlagIcon from "@mui/icons-material/Flag";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
 import DnsIcon from "@mui/icons-material/Dns";
+import PersonIcon from "@mui/icons-material/Person";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   getGeneration, editTestCase, deleteTestCase, approveGeneration, approveTestCase,
   executeGeneration, triggerGeneration, stopGeneration, listScenarioJobs, stopScenarioJob,
   listEnvironments, updateEnvironmentNames, deleteEnvironment,
+  listTestUsers, deleteTestUser,
 } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import StatusChip from "../components/StatusChip";
@@ -35,12 +39,13 @@ import AddTestCaseDialog from "../components/AddTestCaseDialog";
 import RegenerateDialog from "../components/RegenerateDialog";
 import ClosableDialogTitle from "../components/ClosableDialogTitle";
 import AddEnvironmentDialog from "../components/AddEnvironmentDialog";
+import AddTestUserDialog from "../components/AddTestUserDialog";
 import Toast from "../components/Toast";
 
 const POLLING_STATUSES = ["PENDING", "GENERATING", "SCENARIOS_READY", "GENERATING_STEPS"];
 const STEPS_PHASE_STATUSES = ["SCENARIOS_READY", "GENERATING_STEPS"];
 const ACTIVE_JOB_STATUSES = ["QUEUED", "RUNNING"];
-const VALID_TABS = ["all", "needs_review", "active", "completed", "environments"];
+const VALID_TABS = ["all", "needs_review", "active", "completed", "environments", "test_users"];
 const METHOD_COLOR = { GET: "info", POST: "success", PUT: "warning", PATCH: "warning", DELETE: "error" };
 const LIFECYCLE_ROLE_COLOR = {
   create: "success", read: "info", update: "warning", delete: "error",
@@ -86,6 +91,15 @@ export default function GenerationPage() {
   const [envDeleteTarget, setEnvDeleteTarget] = useState(null);
   const [envDeleting, setEnvDeleting] = useState(false);
 
+  const [tuSelectedEnvId, setTuSelectedEnvId] = useState("");
+  const [testUsers, setTestUsers] = useState([]);
+  const [tuLoading, setTuLoading] = useState(false);
+  const [revealedTu, setRevealedTu] = useState(new Set());
+  const [addTuOpen, setAddTuOpen] = useState(false);
+  const [editTuTarget, setEditTuTarget] = useState(null);
+  const [deleteTuTarget, setDeleteTuTarget] = useState(null);
+  const [tuDeleting, setTuDeleting] = useState(false);
+
   const fetchEnvironments = useCallback(async () => {
     const envs = await listEnvironments(projectId).catch(() => []);
     setEnvironments(envs);
@@ -94,6 +108,28 @@ export default function GenerationPage() {
   }, [projectId]);
 
   useEffect(() => { fetchEnvironments(); }, [fetchEnvironments]);
+
+  const fetchTestUsers = useCallback(async (envId) => {
+    if (!envId) { setTestUsers([]); return; }
+    setTuLoading(true);
+    setTestUsers([]);
+    try {
+      setTestUsers(await listTestUsers(projectId, envId));
+    } catch {
+      setTestUsers([]);
+    } finally {
+      setTuLoading(false);
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    setTuSelectedEnvId((prev) => (environments.some((e) => e.id === prev) ? prev : environments[0]?.id || ""));
+  }, [environments]);
+
+  useEffect(() => {
+    setRevealedTu(new Set());
+    if (mainTab === "test_users") fetchTestUsers(tuSelectedEnvId);
+  }, [tuSelectedEnvId, mainTab, fetchTestUsers]);
 
   // Fires once, the first time this generation is observed having entered
   // the steps phase - covers both the 3s poll noticing the transition and a
@@ -231,6 +267,32 @@ export default function GenerationPage() {
     }
   };
 
+  const handleTuSaved = (updated) => {
+    setAddTuOpen(false);
+    setEditTuTarget(null);
+    setTestUsers(updated);
+  };
+
+  const toggleReveal = (id) => {
+    setRevealedTu((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const handleTuDelete = async () => {
+    try {
+      setTuDeleting(true);
+      setTestUsers(await deleteTestUser(projectId, tuSelectedEnvId, deleteTuTarget.id));
+      setDeleteTuTarget(null);
+    } catch (e) {
+      setError(e.response?.data?.error || "Failed to delete test user");
+    } finally {
+      setTuDeleting(false);
+    }
+  };
+
   const handleRetry = async () => {
     try {
       setRetrying(true);
@@ -327,7 +389,7 @@ export default function GenerationPage() {
           <IconButton size="small" onClick={() => nav(`/projects/${projectId}`)}>
             <ArrowBackIcon fontSize="small" />
           </IconButton>
-          <Typography variant="h5" fontWeight={700}>Generation</Typography>
+          <Typography variant="h5" fontWeight={700}>Test Cases</Typography>
         </Box>
         {gen && gen.status !== "APPROVED" && <StatusChip status={gen.status} size="medium" />}
         {isAdmin && results.length > 0 && (
@@ -447,6 +509,7 @@ export default function GenerationPage() {
             <Tab icon={<PendingActionsIcon fontSize="small" />} iconPosition="start" label={`Job Queue (${activeJobs.length})`} value="active" />
             <Tab icon={<DoneAllIcon fontSize="small" />} iconPosition="start" label={`Completed Jobs (${completedJobs.length})`} value="completed" />
             <Tab icon={<DnsIcon fontSize="small" />} iconPosition="start" label="Environments" value="environments" />
+            <Tab icon={<PersonIcon fontSize="small" />} iconPosition="start" label="Test Users" value="test_users" />
           </Tabs>
 
           {mainTab === "needs_review" && results.every((r) => !(r.test_cases || []).some((tc) => tc.needs_review)) && (
@@ -632,6 +695,98 @@ export default function GenerationPage() {
                     </Card>
                   ))}
                 </Box>
+              )}
+            </Box>
+          )}
+
+          {mainTab === "test_users" && (
+            <Box>
+              <Box sx={{ display: "flex", gap: 2, mb: 2, alignItems: "center", flexWrap: "wrap" }}>
+                {environments.length > 0 ? (
+                  <Select
+                    size="small"
+                    value={tuSelectedEnvId}
+                    onChange={(e) => setTuSelectedEnvId(e.target.value)}
+                    sx={{ minWidth: 180 }}
+                  >
+                    {environments.map((env) => (
+                      <MenuItem key={env.id} value={env.id}>{env.name}</MenuItem>
+                    ))}
+                  </Select>
+                ) : (
+                  <Typography color="text.secondary" variant="body2">
+                    No environments configured yet — add one in the Environments tab first.
+                  </Typography>
+                )}
+                {isAdmin && environments.length > 0 && (
+                  <Button
+                    variant="outlined"
+                    startIcon={<AddIcon />}
+                    sx={{ ml: "auto" }}
+                    onClick={() => setAddTuOpen(true)}
+                  >
+                    Add Test User
+                  </Button>
+                )}
+              </Box>
+
+              {environments.length > 0 && (
+                tuLoading ? (
+                  <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+                    <CircularProgress size={28} />
+                  </Box>
+                ) : testUsers.length === 0 ? (
+                  <Typography color="text.secondary" variant="body2">No test users for this environment yet.</Typography>
+                ) : (
+                  <Box sx={{ minHeight: 380, backgroundColor: "background.paper" }}>
+                    <Table size="small" sx={{ tableLayout: "fixed", backgroundColor: "background.paper" }}>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ width: 220 }}>Username</TableCell>
+                          <TableCell sx={{ width: 220 }}>Password</TableCell>
+                          <TableCell sx={{ width: 160 }}>Roles</TableCell>
+                          {isAdmin && <TableCell align="right" sx={{ width: 100 }}>Actions</TableCell>}
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {testUsers.map((u) => (
+                          <TableRow key={u.id} hover>
+                            <TableCell sx={{ overflowWrap: "break-word" }}>{u.username}</TableCell>
+                            <TableCell sx={{ fontFamily: "monospace", overflowWrap: "break-word" }}>
+                              {revealedTu.has(u.id) ? u.password : "..."}
+                              <IconButton size="small" onClick={() => toggleReveal(u.id)} sx={{ ml: 0.5 }}>
+                                {revealedTu.has(u.id) ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+                              </IconButton>
+                            </TableCell>
+                            <TableCell sx={{ overflowWrap: "break-word" }}>
+                              {u.roles?.length ? (
+                                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, py: 0.5 }}>
+                                  {u.roles.map((r) => (
+                                    <Chip key={r} label={r} size="small" variant="outlined" />
+                                  ))}
+                                </Box>
+                              ) : "—"}
+                            </TableCell>
+                            {isAdmin && (
+                              <TableCell align="right">
+                                <Tooltip title="Edit test user">
+                                  <IconButton size="small" onClick={() => setEditTuTarget(u)}>
+                                    <EditIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Delete test user">
+                                  <IconButton size="small" color="error" onClick={() => setDeleteTuTarget(u)}>
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </TableCell>
+                            )}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </Box>
+                )
               )}
             </Box>
           )}
@@ -834,6 +989,28 @@ export default function GenerationPage() {
           <Button variant="outlined" onClick={() => setEnvDeleteTarget(null)}>Cancel</Button>
           <Button variant="contained" color="error" onClick={handleEnvDelete} disabled={envDeleting}>
             {envDeleting ? <CircularProgress size={20} /> : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <AddTestUserDialog
+        open={addTuOpen || !!editTuTarget}
+        projectId={projectId}
+        envId={tuSelectedEnvId}
+        editTarget={editTuTarget}
+        onClose={() => { setAddTuOpen(false); setEditTuTarget(null); }}
+        onSaved={handleTuSaved}
+      />
+
+      <Dialog open={!!deleteTuTarget} onClose={() => setDeleteTuTarget(null)}>
+        <ClosableDialogTitle onClose={() => setDeleteTuTarget(null)}>Delete Test User</ClosableDialogTitle>
+        <DialogContent>
+          <Typography>Delete <strong>{deleteTuTarget?.username}</strong>? This cannot be undone.</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button variant="outlined" onClick={() => setDeleteTuTarget(null)}>Cancel</Button>
+          <Button variant="contained" color="error" onClick={handleTuDelete} disabled={tuDeleting}>
+            {tuDeleting ? <CircularProgress size={20} /> : "Delete"}
           </Button>
         </DialogActions>
       </Dialog>
