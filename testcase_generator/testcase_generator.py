@@ -2,7 +2,7 @@ import os
 import json
 
 from testcase_generator.prompt_builder import PromptBuilder
-from testcase_generator.response_parser import parse_response
+from testcase_generator.response_parser import parse_response, normalize_auth_overrides
 from testcase_generator.testcaseIdGenerator import TCIDGenerator
 from llm.core.exceptions import LLMResponseError, LLMTruncationError
 from configs.settings import LLM
@@ -88,6 +88,7 @@ class TestcaseGenerator:
                         existing_entry = existing_tc_map[key]
                         existing_entry["requires_auth"] = requires_auth
                         existing_entry["auth_schemes"] = auth_schemes
+                        normalize_auth_overrides(existing_entry, requires_auth)
                         final_results.append(existing_entry)
                         if progress_callback:
                             progress_callback(api_index, total, endpoint, method)
@@ -165,7 +166,9 @@ class TestcaseGenerator:
             try:
                 response = self.llm.generate(prompt, api)
 
-                return parse_response(response)
+                requires_auth = api.get("api_details", {}).get("requires_auth", False)
+
+                return parse_response(response, requires_auth)
 
             except LLMResponseError as e:
 
