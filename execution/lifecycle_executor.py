@@ -301,7 +301,8 @@ class LifecycleExecutor:
                 response_json, expected.get("required_fields", []), validations
             )
             overall &= common_validator.validate_field_types(
-                response_json, expected.get("field_types", {}), validations
+                response_json, expected.get("field_types", {}), validations,
+                expected.get("required_fields", []),
             )
 
             if compare_against:

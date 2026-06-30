@@ -25,7 +25,8 @@ class GetValidator(CommonValidator):
                     )
 
                     overall &= self.validate_field_types(
-                        first, expected["field_types"], validations
+                        first, expected["field_types"], validations,
+                        expected["required_fields"],
                     )
 
             elif isinstance(response_json, dict):
@@ -35,7 +36,8 @@ class GetValidator(CommonValidator):
                 )
 
                 overall &= self.validate_field_types(
-                    response_json, expected["field_types"], validations
+                    response_json, expected["field_types"], validations,
+                    expected["required_fields"],
                 )
 
         return {"passed": bool(overall), "validation_details": validations}

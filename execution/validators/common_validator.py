@@ -37,13 +37,28 @@ class CommonValidator:
 
         return result
 
-    def validate_field_types(self, target, field_types, validations):
+    def validate_field_types(self, target, field_types, validations, required_fields=None):
+
+        required_fields = required_fields or []
 
         result = True
 
         for field, expected_type in field_types.items():
 
             value = target.get(field)
+
+            if value is None and field not in required_fields:
+
+                validations.append(
+                    {
+                        "check": f"type:{field}",
+                        "expected": expected_type,
+                        "actual": "NoneType",
+                        "passed": True,
+                    }
+                )
+
+                continue
 
             expected_python_type = self.TYPE_MAP.get(expected_type)
 

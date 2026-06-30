@@ -19,7 +19,8 @@ class PostValidator(CommonValidator):
             )
 
             overall &= self.validate_field_types(
-                response_json, expected["field_types"], validations
+                response_json, expected["field_types"], validations,
+                expected["required_fields"],
             )
 
             # Handle both dict and list request payloads
