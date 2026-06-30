@@ -1,0 +1,58 @@
+tags:
+  - Test Users
+summary: Update a test user
+description: Updates username/role; password is optional - leave it blank or omit it to keep the current password unchanged.
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    required: true
+    schema:
+      type: string
+  - in: path
+    name: env_id
+    required: true
+    schema:
+      type: string
+  - in: path
+    name: user_id
+    required: true
+    schema:
+      type: string
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        required: [username]
+        properties:
+          username: {type: string}
+          password: {type: string, description: "Stored in plaintext, no hashing. Omit or leave blank to keep the current password."}
+          roles:
+            type: array
+            items: {type: string}
+responses:
+  200:
+    description: Updated list of test users for the environment
+    content:
+      application/json:
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              id: {type: string}
+              environment_id: {type: string}
+              username: {type: string}
+              password: {type: string}
+              roles:
+                type: array
+                items: {type: string}
+  400:
+    description: Missing username
+  401:
+    description: Authentication required
+  404:
+    description: Project, environment, or test user not found

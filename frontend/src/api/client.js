@@ -95,6 +95,16 @@ export const updateEnvironmentNames = (id, environments) =>
 export const deleteEnvironment = (id, envId) =>
   api.delete(`/projects/${id}/environments/${envId}`).then((r) => r.data);
 
+// Test Users
+export const listTestUsers = (id, envId) =>
+  api.get(`/projects/${id}/environments/${envId}/test_users`).then((r) => r.data);
+export const createTestUser = (id, envId, body) =>
+  api.post(`/projects/${id}/environments/${envId}/test_users`, body).then((r) => r.data);
+export const updateTestUser = (id, envId, userId, body) =>
+  api.put(`/projects/${id}/environments/${envId}/test_users/${userId}`, body).then((r) => r.data);
+export const deleteTestUser = (id, envId, userId) =>
+  api.delete(`/projects/${id}/environments/${envId}/test_users/${userId}`).then((r) => r.data);
+
 // Executions
 export const executeGeneration = (id, gid, body = {}) =>
   api.post(`/projects/${id}/generations/${gid}/execute`, body).then((r) => r.data);

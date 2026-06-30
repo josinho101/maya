@@ -1,0 +1,42 @@
+tags:
+  - Test Users
+summary: Delete a test user
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    required: true
+    schema:
+      type: string
+  - in: path
+    name: env_id
+    required: true
+    schema:
+      type: string
+  - in: path
+    name: user_id
+    required: true
+    schema:
+      type: string
+responses:
+  200:
+    description: Updated list of test users for the environment with the given one removed
+    content:
+      application/json:
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              id: {type: string}
+              environment_id: {type: string}
+              username: {type: string}
+              password: {type: string}
+              roles:
+                type: array
+                items: {type: string}
+  401:
+    description: Authentication required
+  404:
+    description: Project, environment, or test user not found

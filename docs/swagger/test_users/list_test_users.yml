@@ -1,0 +1,38 @@
+tags:
+  - Test Users
+summary: List test users for an environment
+description: Test users hold credentials (stored in plaintext, no hashing) used to authenticate against APIs in this environment.
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    required: true
+    schema:
+      type: string
+  - in: path
+    name: env_id
+    required: true
+    schema:
+      type: string
+responses:
+  200:
+    description: Array of test users for the environment
+    content:
+      application/json:
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              id: {type: string}
+              environment_id: {type: string}
+              username: {type: string}
+              password: {type: string, description: "Stored and returned in plaintext, no hashing."}
+              roles:
+                type: array
+                items: {type: string}
+  401:
+    description: Authentication required
+  404:
+    description: Project or environment not found

@@ -1,0 +1,54 @@
+tags:
+  - Test Users
+summary: Create a test user for an environment
+description: Adds a credential (username/password/role) scoped to this environment. Stored in plaintext, no hashing.
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    required: true
+    schema:
+      type: string
+  - in: path
+    name: env_id
+    required: true
+    schema:
+      type: string
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        required: [username, password]
+        properties:
+          username: {type: string}
+          password: {type: string, description: "Stored in plaintext, no hashing."}
+          roles:
+            type: array
+            items: {type: string}
+            description: "Free-text roles, e.g. admin, viewer."
+responses:
+  201:
+    description: Updated list of test users for the environment, including the new one
+    content:
+      application/json:
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              id: {type: string}
+              environment_id: {type: string}
+              username: {type: string}
+              password: {type: string}
+              roles:
+                type: array
+                items: {type: string}
+  400:
+    description: Missing username/password
+  401:
+    description: Authentication required
+  404:
+    description: Project or environment not found
