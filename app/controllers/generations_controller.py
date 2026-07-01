@@ -92,6 +92,29 @@ def _backfill_provenance(data):
     return data
 
 
+def _backfill_test_user_assignments(slug, result):
+    users = load_json(data_path(slug, "test_users.json"), default=[])
+    if not users:
+        return
+
+    default_assignments = {}
+    for u in users:
+        env_id = u.get("environment_id")
+        if env_id and env_id not in default_assignments:
+            default_assignments[env_id] = u["id"]
+
+    if not default_assignments:
+        return
+
+    for endpoint_result in result.get("results", []):
+        if not endpoint_result.get("requires_auth"):
+            continue
+        for tc in endpoint_result.get("test_cases", []):
+            if tc.get("auth_override"):
+                continue
+            if not tc.get("test_user_assignments"):
+                tc["test_user_assignments"] = dict(default_assignments)
+
 def _list_generations(slug):
     gen_dir = data_path(slug, "generations")
     if not os.path.isdir(gen_dir):
@@ -160,6 +183,7 @@ def _run_generation(slug, gen_id, parsed_json_path, output_dir, existing_testcas
         # testcases_path is only set below, after both phases - the
         # generation doesn't reach REVIEW, and nothing is exposed to the UI,
         # until step narration has also finished.
+        _backfill_test_user_assignments(slug, result)
         saved_file = TestCaseStorage.save(output_dir, result)
 
         gen = get_generation(slug, gen_id)

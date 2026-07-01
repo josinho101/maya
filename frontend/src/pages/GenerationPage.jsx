@@ -1223,7 +1223,15 @@ export default function GenerationPage() {
                             </TableCell>
                             {result.requires_auth && (
                               <TableCell>
-                                {tableTestUsers.length > 0 ? (
+                                {tc.auth_override === "missing" ? (
+                                  <Typography variant="caption" color="text.secondary" sx={{ fontStyle: "italic" }}>
+                                    No user needed - API will be triggered without credentials
+                                  </Typography>
+                                ) : tc.auth_override === "invalid" ? (
+                                  <Typography variant="caption" color="text.secondary" sx={{ fontStyle: "italic" }}>
+                                    No user needed - API will be triggered with invalid token
+                                  </Typography>
+                                ) : tableTestUsers.length > 0 ? (
                                   <Select
                                     size="small"
                                     displayEmpty
