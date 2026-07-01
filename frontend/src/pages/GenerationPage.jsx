@@ -372,7 +372,6 @@ export default function GenerationPage() {
   const activeJobs = scenarioJobs.filter((j) => ACTIVE_JOB_STATUSES.includes(j.status));
   const completedJobs = scenarioJobs.filter((j) => ["DONE", "FAILED", "CANCELLED"].includes(j.status));
   const progress = gen?.progress;
-  const anyAuthRequired = results.some((r) => r.requires_auth);
 
   const toggleStepsExpanded = (tcId) => {
     setExpandedSteps((prev) => {
@@ -538,17 +537,6 @@ export default function GenerationPage() {
                 {approvedTc} test cases across {results.length} endpoints
               </Typography>
               <Box sx={{ ml: "auto", display: "flex", gap: 1, alignItems: "center" }}>
-                {anyAuthRequired && (
-                  <Chip
-                    icon={<LockIcon fontSize="small" />}
-                    label="Authorize"
-                    size="small"
-                    color="warning"
-                    variant="outlined"                    
-                    sy={{ px: 2 }}
-                    sx={{ px: 1 }}
-                  />
-                )}
                 {approvedTc > 0 && (
                   <TextField
                     size="small"
@@ -814,9 +802,9 @@ export default function GenerationPage() {
             });
             if (filteredCases.length === 0) return null;
             return (
-              <Accordion key={idx} sx={{ mb: 1 }}>
+              <Accordion key={idx} sx={{ mb: 1 }} TransitionProps={{ unmountOnExit: true }}>
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, width: "100%" }}>
                     <Chip
                       label={result.method || "?"}
                       size="small"
@@ -825,6 +813,11 @@ export default function GenerationPage() {
                     <Typography fontFamily="monospace" fontSize={14}>{result.endpoint}</Typography>
                     <Chip label={`${filteredCases.length} cases`} size="small" variant="outlined" />
                     {result.error && <Chip label="error" size="small" color="error" />}
+                    {result.requires_auth && (
+                      <Tooltip title="Requires authentication">
+                        <LockIcon fontSize="small" sx={{ ml: "auto", mr: 1.5 }} />
+                      </Tooltip>
+                    )}
                   </Box>
                 </AccordionSummary>
                 <AccordionDetails sx={{ p: 0 }}>

@@ -16,6 +16,7 @@ import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutlined";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutlined";
 import HistoryIcon from "@mui/icons-material/History";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import LockIcon from "@mui/icons-material/Lock";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   getExecution, listExecutions, executeGeneration, getReportUrl,
@@ -259,9 +260,9 @@ function ExecutionPageInner() {
                   : (result.test_cases || []);
                 if (filteredCases.length === 0) return null;
                 return (
-                  <Accordion key={idx} sx={{ mb: 1, width: "100%" }}>
+                  <Accordion key={idx} sx={{ mb: 1, width: "100%" }} TransitionProps={{ unmountOnExit: true }}>
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, width: "100%" }}>
                         <Chip
                           label={result.method || "?"}
                           size="small"
@@ -274,6 +275,11 @@ function ExecutionPageInner() {
                           variant="outlined"
                         />
                         {result.error && <Chip label="error" size="small" color="error" />}
+                        {result.requires_auth && (
+                          <Tooltip title="Requires authentication">
+                            <LockIcon fontSize="small" sx={{ ml: "auto", mr: 1.5 }} />
+                          </Tooltip>
+                        )}
                       </Box>
                     </AccordionSummary>
                     <AccordionDetails sx={{ p: 0 }}>
