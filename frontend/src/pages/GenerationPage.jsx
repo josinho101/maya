@@ -33,7 +33,7 @@ import {
   executeGeneration, triggerGeneration, stopGeneration, listScenarioJobs, stopScenarioJob,
   listEnvironments, updateEnvironmentNames, deleteEnvironment,
   listTestUsers, deleteTestUser,
-  getAuthConfig, saveAuthConfig, testAuthConfig,
+  getSettings, saveSettings, testAuthConfig,
 } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import StatusChip from "../components/StatusChip";
@@ -313,8 +313,9 @@ export default function GenerationPage() {
     setAuthTestResult(null);
     setAuthSaveError("");
     setEndpointIsCustom(false);
-    getAuthConfig(projectId, settingsEnvId)
-      .then((cfg) => {
+    getSettings(projectId, settingsEnvId)
+      .then((data) => {
+        let cfg = data.auth || {};
         try {
           cfg = { ...cfg, request_body_template: JSON.stringify(JSON.parse(cfg.request_body_template), null, 2) };
         } catch { /* not valid JSON — leave as-is */ }
@@ -347,8 +348,8 @@ export default function GenerationPage() {
     }
     try {
       setAuthSaving(true);
-      const saved = await saveAuthConfig(projectId, settingsEnvId, authDraft);
-      setAuthDraft(saved);
+      const saved = await saveSettings(projectId, settingsEnvId, { auth: authDraft });
+      setAuthDraft(saved.auth);
     } catch (e) {
       setAuthSaveError(e.response?.data?.error || "Failed to save auth config");
     } finally {

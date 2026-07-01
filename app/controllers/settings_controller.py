@@ -10,7 +10,7 @@ from app.storage.json_store import data_path, load_json, save_json
 
 VALID_AUTH_TYPES = {"none", "bearer_login"}
 
-_DEFAULTS = {
+_AUTH_DEFAULTS = {
     "auth_type": "none",
     "auth_endpoint": "",
     "request_body_template": '{"username": "{{username}}", "password": "{{password}}"}',
@@ -18,7 +18,11 @@ _DEFAULTS = {
 }
 
 
-def _configs_path(slug):
+def _settings_path(slug):
+    return data_path(slug, "settings.json")
+
+
+def _legacy_auth_path(slug):
     return data_path(slug, "auth_configs.json")
 
 
@@ -31,34 +35,55 @@ def _require_project_and_env(project_id, env_id):
     return p["slug"]
 
 
+def _load_env_settings(slug, env_id):
+    """Load env settings, migrating from legacy auth_configs.json if needed."""
+    all_settings = load_json(_settings_path(slug), default={})
+    if env_id in all_settings:
+        return all_settings[env_id]
+
+    # One-time migration: promote legacy auth config into the new shape
+    legacy = load_json(_legacy_auth_path(slug), default={})
+    if env_id in legacy:
+        return {"auth": legacy[env_id]}
+
+    return {}
+
+
 def get(project_id, env_id):
     slug = _require_project_and_env(project_id, env_id)
-    all_configs = load_json(_configs_path(slug), default={})
-    return {**_DEFAULTS, **all_configs.get(env_id, {})}
+    env_settings = _load_env_settings(slug, env_id)
+    auth = {**_AUTH_DEFAULTS, **env_settings.get("auth", {})}
+    return {**env_settings, "auth": auth}
 
 
-def save(project_id, env_id, config):
+def save(project_id, env_id, settings):
     slug = _require_project_and_env(project_id, env_id)
 
-    auth_type = (config.get("auth_type") or "none").strip()
-    if auth_type not in VALID_AUTH_TYPES:
-        raise BadRequest(f"Invalid auth_type '{auth_type}': must be one of {sorted(VALID_AUTH_TYPES)}")
+    all_settings = load_json(_settings_path(slug), default={})
+    current = _load_env_settings(slug, env_id)
 
-    to_store = {
-        "auth_type": auth_type,
-        "auth_endpoint": (config.get("auth_endpoint") or "").strip(),
-        "request_body_template": config.get("request_body_template") or _DEFAULTS["request_body_template"],
-        "token_path": (config.get("token_path") or "token").strip(),
-    }
+    # Merge top-level sections so unknown future keys are preserved
+    merged = {**current, **settings}
 
-    all_configs = load_json(_configs_path(slug), default={})
-    all_configs[env_id] = to_store
-    save_json(_configs_path(slug), all_configs)
-    return to_store
+    # Validate and normalise the auth section if present
+    if "auth" in merged:
+        auth = merged["auth"] or {}
+        auth_type = (auth.get("auth_type") or "none").strip()
+        if auth_type not in VALID_AUTH_TYPES:
+            raise BadRequest(f"Invalid auth_type '{auth_type}': must be one of {sorted(VALID_AUTH_TYPES)}")
+        merged["auth"] = {
+            "auth_type": auth_type,
+            "auth_endpoint": (auth.get("auth_endpoint") or "").strip(),
+            "request_body_template": auth.get("request_body_template") or _AUTH_DEFAULTS["request_body_template"],
+            "token_path": (auth.get("token_path") or "token").strip(),
+        }
+
+    all_settings[env_id] = merged
+    save_json(_settings_path(slug), all_settings)
+    return merged
 
 
 def _resolve_path(data, dot_path):
-    """Walk a dot-separated path through a nested dict. Returns (value, found)."""
     current = data
     for part in dot_path.split("."):
         if not isinstance(current, dict) or part not in current:
@@ -67,9 +92,9 @@ def _resolve_path(data, dot_path):
     return current, True
 
 
-def test_login(project_id, env_id, config):
+def test_auth(project_id, env_id, auth_config):
     """Fire the configured login request using the first test user. Always returns a result dict."""
-    if config.get("auth_type") != "bearer_login":
+    if auth_config.get("auth_type") != "bearer_login":
         return {"success": False, "message": "Auth type is not Bearer Token"}
 
     try:
@@ -81,11 +106,11 @@ def test_login(project_id, env_id, config):
         return {"success": False, "message": "No test users configured for this environment. Add one in the Test Users tab first."}
 
     user = users[0]
-    auth_endpoint = (config.get("auth_endpoint") or "").strip()
+    auth_endpoint = (auth_config.get("auth_endpoint") or "").strip()
     if not auth_endpoint:
         return {"success": False, "message": "Auth endpoint is not configured"}
 
-    template = config.get("request_body_template") or _DEFAULTS["request_body_template"]
+    template = auth_config.get("request_body_template") or _AUTH_DEFAULTS["request_body_template"]
     body_str = template.replace("{{username}}", user.get("username", "")).replace("{{password}}", user.get("password", ""))
 
     try:
@@ -107,7 +132,7 @@ def test_login(project_id, env_id, config):
     except Exception:
         resp_body = resp.text
 
-    token_path = (config.get("token_path") or "token").strip()
+    token_path = (auth_config.get("token_path") or "token").strip()
     token, found = _resolve_path(resp_body if isinstance(resp_body, dict) else {}, token_path)
 
     if found and token:

@@ -53,7 +53,7 @@ def create_app():
     from app.routes.scenario_jobs import bp as scenario_jobs_bp
     from app.routes.environments import bp as environments_bp
     from app.routes.test_users import bp as test_users_bp
-    from app.routes.auth_config import bp as auth_config_bp
+    from app.routes.settings import bp as settings_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api")
     app.register_blueprint(projects_bp, url_prefix="/api")
@@ -63,7 +63,7 @@ def create_app():
     app.register_blueprint(scenario_jobs_bp, url_prefix="/api")
     app.register_blueprint(environments_bp, url_prefix="/api")
     app.register_blueprint(test_users_bp, url_prefix="/api")
-    app.register_blueprint(auth_config_bp, url_prefix="/api")
+    app.register_blueprint(settings_bp, url_prefix="/api")
 
     from app.services import scenario_job_queue
     scenario_job_queue.start_worker()

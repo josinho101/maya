@@ -1,0 +1,68 @@
+tags:
+  - Settings
+summary: Save environment settings
+description: >
+  Persists settings for the given environment. The request body is a keyed object
+  where each top-level key is a settings section (e.g. "auth"). Sections present
+  in the body are merged with existing settings; unknown sections are preserved.
+  Only admins can write settings.
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    required: true
+    schema:
+      type: string
+  - in: path
+    name: env_id
+    required: true
+    schema:
+      type: string
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          auth:
+            type: object
+            description: Authentication configuration
+            required: [auth_type]
+            properties:
+              auth_type:
+                type: string
+                enum: [none, bearer_login]
+              auth_endpoint:
+                type: string
+                description: "Login URL (bearer_login only)"
+              request_body_template:
+                type: string
+                description: "JSON template with {{username}} and {{password}} placeholders"
+              token_path:
+                type: string
+                description: "Dot-separated path to token in login response"
+responses:
+  200:
+    description: Saved settings
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            auth:
+              type: object
+              properties:
+                auth_type: {type: string}
+                auth_endpoint: {type: string}
+                request_body_template: {type: string}
+                token_path: {type: string}
+  400:
+    description: Invalid setting value (e.g. unknown auth_type)
+  401:
+    description: Authentication required
+  403:
+    description: Admin access required
+  404:
+    description: Project or environment not found

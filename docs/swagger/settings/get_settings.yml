@@ -1,0 +1,49 @@
+tags:
+  - Settings
+summary: Get environment settings
+description: >
+  Returns all settings scoped to the given environment as a keyed object.
+  Each top-level key is a settings section (e.g. "auth"). If no settings have
+  been saved yet, sections are returned with their default values.
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    required: true
+    schema:
+      type: string
+  - in: path
+    name: env_id
+    required: true
+    schema:
+      type: string
+responses:
+  200:
+    description: Environment settings
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            auth:
+              type: object
+              description: Authentication configuration for this environment
+              properties:
+                auth_type:
+                  type: string
+                  enum: [none, bearer_login]
+                  description: "none = no authentication; bearer_login = POST credentials to a login endpoint and use the returned JWT as a Bearer token."
+                auth_endpoint:
+                  type: string
+                  description: "URL to POST credentials to (bearer_login only)"
+                request_body_template:
+                  type: string
+                  description: "JSON template with {{username}} and {{password}} placeholders"
+                token_path:
+                  type: string
+                  description: "Dot-separated path to the token in the login response, e.g. 'token' or 'data.access_token'"
+  401:
+    description: Authentication required
+  404:
+    description: Project or environment not found

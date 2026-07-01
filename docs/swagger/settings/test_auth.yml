@@ -1,10 +1,10 @@
 tags:
-  - Auth Config
-summary: Test authentication configuration for an environment
+  - Settings
+summary: Test authentication configuration
 description: >
-  Fires a real login request using the provided (unsaved) config draft and the first test user
-  configured for the environment. Returns the full API response so the caller can verify the
-  token path and request body template before saving.
+  Fires a real login request using the provided (unsaved) auth config draft and
+  the first test user configured for the environment. Returns the full API response
+  so the caller can verify the token path and request body template before saving.
   If no test users exist for the environment a descriptive error is returned (HTTP 200, success=false).
 security:
   - Bearer: []
@@ -25,6 +25,7 @@ requestBody:
     application/json:
       schema:
         type: object
+        description: The auth section of settings (not the full settings object)
         required: [auth_type]
         properties:
           auth_type:
