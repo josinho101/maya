@@ -1,0 +1,45 @@
+tags:
+  - Auth Config
+summary: Get authentication configuration for an environment
+description: >
+  Returns the authentication configuration scoped to the given environment.
+  If no configuration has been saved yet the response contains default values
+  (auth_type "none", empty endpoint, default body template and token path).
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    required: true
+    schema:
+      type: string
+  - in: path
+    name: env_id
+    required: true
+    schema:
+      type: string
+responses:
+  200:
+    description: Auth configuration for the environment
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            auth_type:
+              type: string
+              enum: [none, bearer_login]
+              description: "none = no authentication; bearer_login = POST credentials to a login endpoint and use the returned JWT as a Bearer token."
+            auth_endpoint:
+              type: string
+              description: "URL to POST credentials to (bearer_login only), e.g. http://localhost:3000/api/auth/login"
+            request_body_template:
+              type: string
+              description: "JSON template sent to auth_endpoint. Use {{username}} and {{password}} as placeholders — they are substituted with the first matching test user's credentials at test time."
+            token_path:
+              type: string
+              description: "Dot-separated path into the login response JSON where the token lives, e.g. 'token' or 'data.access_token'."
+  401:
+    description: Authentication required
+  404:
+    description: Project or environment not found

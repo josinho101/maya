@@ -1,0 +1,61 @@
+tags:
+  - Auth Config
+summary: Save authentication configuration for an environment
+description: >
+  Persists the authentication configuration for the given environment.
+  Only admins can write this config.
+  For bearer_login the request body template must contain {{username}} and {{password}} placeholders
+  (validation is enforced by the frontend; the backend validates auth_type only).
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    required: true
+    schema:
+      type: string
+  - in: path
+    name: env_id
+    required: true
+    schema:
+      type: string
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        required: [auth_type]
+        properties:
+          auth_type:
+            type: string
+            enum: [none, bearer_login]
+          auth_endpoint:
+            type: string
+            description: "Login URL (bearer_login only)"
+          request_body_template:
+            type: string
+            description: "JSON template with {{username}} and {{password}} placeholders"
+          token_path:
+            type: string
+            description: "Dot-separated path to token in login response, e.g. 'token'"
+responses:
+  200:
+    description: Saved auth configuration
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            auth_type: {type: string}
+            auth_endpoint: {type: string}
+            request_body_template: {type: string}
+            token_path: {type: string}
+  400:
+    description: Invalid auth_type value
+  401:
+    description: Authentication required
+  403:
+    description: Admin access required
+  404:
+    description: Project or environment not found

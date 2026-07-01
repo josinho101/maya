@@ -1,0 +1,65 @@
+tags:
+  - Auth Config
+summary: Test authentication configuration for an environment
+description: >
+  Fires a real login request using the provided (unsaved) config draft and the first test user
+  configured for the environment. Returns the full API response so the caller can verify the
+  token path and request body template before saving.
+  If no test users exist for the environment a descriptive error is returned (HTTP 200, success=false).
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    required: true
+    schema:
+      type: string
+  - in: path
+    name: env_id
+    required: true
+    schema:
+      type: string
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        required: [auth_type]
+        properties:
+          auth_type:
+            type: string
+            enum: [none, bearer_login]
+          auth_endpoint:
+            type: string
+          request_body_template:
+            type: string
+          token_path:
+            type: string
+responses:
+  200:
+    description: >
+      Test result. Always HTTP 200 — check the 'success' field.
+      'response_body' is present whenever an HTTP response was received from the target API.
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            status_code:
+              type: integer
+              description: "HTTP status returned by the auth endpoint (absent on connection errors)"
+            message:
+              type: string
+              description: "Human-readable outcome, e.g. 'Token extracted at path token' or error details"
+            token_preview:
+              type: string
+              description: "First 30 characters of the extracted token (success only)"
+            response_body:
+              description: "Full response from the auth endpoint — JSON object or raw string"
+  401:
+    description: Authentication required
+  404:
+    description: Project or environment not found

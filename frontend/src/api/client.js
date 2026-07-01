@@ -105,6 +105,14 @@ export const updateTestUser = (id, envId, userId, body) =>
 export const deleteTestUser = (id, envId, userId) =>
   api.delete(`/projects/${id}/environments/${envId}/test_users/${userId}`).then((r) => r.data);
 
+// Auth Config
+export const getAuthConfig = (id, envId) =>
+  api.get(`/projects/${id}/environments/${envId}/auth-config`).then((r) => r.data);
+export const saveAuthConfig = (id, envId, config) =>
+  api.put(`/projects/${id}/environments/${envId}/auth-config`, config).then((r) => r.data);
+export const testAuthConfig = (id, envId, config) =>
+  api.post(`/projects/${id}/environments/${envId}/auth-config/test`, config).then((r) => r.data);
+
 // Executions
 export const executeGeneration = (id, gid, body = {}) =>
   api.post(`/projects/${id}/generations/${gid}/execute`, body).then((r) => r.data);
