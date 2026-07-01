@@ -26,7 +26,7 @@ class LifecycleExecutor:
     """
 
     @staticmethod
-    def run(base_url, resource_key, group_entries):
+    def run(base_url, resource_key, group_entries, auth_manager=None, env_id=None):
 
         results = []
         executed_tc_ids = set()
@@ -51,7 +51,11 @@ class LifecycleExecutor:
             logger.info(f"Executing lifecycle CREATE for resource '{resource_key}'")
 
             result, response_json, status_code = APIExecutor.execute_test_case(
-                base_url, entry["endpoint"], entry["method"], tc, resource_key
+                base_url, entry["endpoint"], entry["method"], tc, resource_key,
+                requires_auth=entry.get("requires_auth", False),
+                auth_schemes=entry.get("auth_schemes", []),
+                auth_manager=auth_manager,
+                env_id=env_id,
             )
             results.append(result)
 
@@ -83,6 +87,10 @@ class LifecycleExecutor:
                 read_result, _, _ = APIExecutor.execute_test_case(
                     base_url, read_entry["endpoint"], read_entry["method"], read_tc, resource_key,
                     path_param_overrides=overrides,
+                    requires_auth=read_entry.get("requires_auth", False),
+                    auth_schemes=read_entry.get("auth_schemes", []),
+                    auth_manager=auth_manager,
+                    env_id=env_id,
                 )
                 results.append(read_result)
 
@@ -109,6 +117,10 @@ class LifecycleExecutor:
                 result, _, status_code = APIExecutor.execute_test_case(
                     base_url, entry["endpoint"], entry["method"], tc, resource_key,
                     path_param_overrides=overrides,
+                    requires_auth=entry.get("requires_auth", False),
+                    auth_schemes=entry.get("auth_schemes", []),
+                    auth_manager=auth_manager,
+                    env_id=env_id,
                 )
                 results.append(result)
 
@@ -146,6 +158,10 @@ class LifecycleExecutor:
                 result, _, status_code = APIExecutor.execute_test_case(
                     base_url, entry["endpoint"], entry["method"], tc, resource_key,
                     path_param_overrides=overrides,
+                    requires_auth=entry.get("requires_auth", False),
+                    auth_schemes=entry.get("auth_schemes", []),
+                    auth_manager=auth_manager,
+                    env_id=env_id,
                 )
                 results.append(result)
 
@@ -205,7 +221,11 @@ class LifecycleExecutor:
                     continue
 
                 result, _, _ = APIExecutor.execute_test_case(
-                    base_url, endpoint, method, tc, resource_key
+                    base_url, endpoint, method, tc, resource_key,
+                    requires_auth=entry.get("requires_auth", False),
+                    auth_schemes=entry.get("auth_schemes", []),
+                    auth_manager=auth_manager,
+                    env_id=env_id,
                 )
                 results.append(result)
 

@@ -8,6 +8,7 @@ from app.controllers import BadRequest, NotFound
 from app.controllers import environments_controller
 from app.controllers.generations_controller import get_generation
 from app.controllers.projects_controller import find_project
+from app.controllers import settings_controller, test_users_controller
 from app.storage.json_store import data_path, load_json, new_id, save_json
 from Utils.logger import logger
 
@@ -32,7 +33,8 @@ def _list_executions(slug):
     return sorted(execs, key=lambda x: x.get("started_at", ""), reverse=True)
 
 
-def _run_execution(slug, exec_id, output_dir, testcases_path, base_url_override=None, environment_name=None):
+def _run_execution(slug, exec_id, output_dir, testcases_path, base_url_override=None,
+                   environment_name=None, env_id=None, auth_config=None, test_users=None):
     exc = _get_execution(slug, exec_id)
     exc["status"] = "RUNNING"
     _save_execution(slug, exc)
@@ -46,6 +48,9 @@ def _run_execution(slug, exec_id, output_dir, testcases_path, base_url_override=
             output_dir, testcases_path,
             base_url_override=base_url_override,
             environment_name=environment_name,
+            env_id=env_id,
+            auth_config=auth_config,
+            test_users=test_users,
         )
 
         with open(report_paths["latest_json_report"], encoding="utf-8") as f:
@@ -105,6 +110,37 @@ def execute(project_id, gen_id, environment_id=None):
     else:
         env = envs[0] if envs else None
 
+    env_id = env["id"] if env else None
+
+    # Pre-execution auth readiness check: if any endpoint requires auth and the
+    # env is configured for bearer_login, at least one test user must exist.
+    auth_config = None
+    test_users = []
+    if env_id:
+        try:
+            env_settings = settings_controller.get(project_id, env_id)
+            auth_config = env_settings.get("auth", {})
+        except Exception:
+            auth_config = {}
+
+        if auth_config.get("auth_type", "none") != "none":
+            with open(gen["testcases_path"], "r") as f:
+                tc_data = json.load(f)
+            has_auth_endpoints = any(
+                r.get("requires_auth") for r in tc_data.get("results", [])
+            )
+            if has_auth_endpoints:
+                try:
+                    test_users = test_users_controller.list_for_env(project_id, env_id)
+                except Exception:
+                    test_users = []
+                if not test_users:
+                    raise BadRequest(
+                        "This project has authenticated endpoints but no test users are configured "
+                        "for the selected environment. Add at least one test user in "
+                        "Settings → Test Users before executing."
+                    )
+
     exec_id = new_id()
     now = datetime.now(timezone.utc).isoformat()
     exc = {
@@ -118,7 +154,7 @@ def execute(project_id, gen_id, environment_id=None):
         "report_json": None,
         "summary": None,
         "error": None,
-        "environment_id": env["id"] if env else None,
+        "environment_id": env_id,
         "environment_name": env["name"] if env else None,
         "base_url": env["url"] if env else None,
     }
@@ -128,8 +164,14 @@ def execute(project_id, gen_id, environment_id=None):
 
     threading.Thread(
         target=_run_execution,
-        args=(slug, exec_id, gen["output_dir"], gen["testcases_path"],
-              env["url"] if env else None, env["name"] if env else None),
+        args=(slug, exec_id, gen["output_dir"], gen["testcases_path"]),
+        kwargs={
+            "base_url_override": env["url"] if env else None,
+            "environment_name": env["name"] if env else None,
+            "env_id": env_id,
+            "auth_config": auth_config,
+            "test_users": test_users,
+        },
         daemon=True,
     ).start()
 

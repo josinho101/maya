@@ -55,7 +55,11 @@ class APIExecutor:
         return response, response_json, execution_time_ms
 
     @staticmethod
-    def execute_test_case(base_url, endpoint, method, tc, resource_key, path_param_overrides=None):
+    def execute_test_case(
+        base_url, endpoint, method, tc, resource_key,
+        path_param_overrides=None,
+        requires_auth=False, auth_schemes=None, auth_manager=None, env_id=None,
+    ):
         """
         Executes a single generated test case against resource_key's
         ResourceContext scope.
@@ -77,7 +81,18 @@ class APIExecutor:
         for k, v in resolved_path_params.items():
             url = url.replace("{" + k + "}", str(v))
 
-        headers = tc.get("headers", {})
+        headers = dict(tc.get("headers", {}))
+
+        if auth_manager:
+            auth_headers = auth_manager.get_auth_headers(
+                requires_auth,
+                auth_schemes or [],
+                tc.get("auth_override"),
+                env_id,
+                tc.get("test_user_assignments", {}),
+            )
+            headers = {**headers, **auth_headers}
+
         files_data = tc.get("files", {})
 
         logger.info(f"Executing testcase {tc['tc_id']} {tc['test_scenario']}")
@@ -160,7 +175,7 @@ class APIExecutor:
         return result, response_json, response.status_code
 
     @staticmethod
-    def execute(project, results):
+    def execute(project, results, auth_manager=None, env_id=None):
 
         from execution.lifecycle_executor import LifecycleExecutor
 
@@ -174,6 +189,8 @@ class APIExecutor:
 
             logger.info(f"Executing resource group '{resource_key}'")
 
-            all_results.extend(LifecycleExecutor.run(base_url, resource_key, group_entries))
+            all_results.extend(
+                LifecycleExecutor.run(base_url, resource_key, group_entries, auth_manager=auth_manager, env_id=env_id)
+            )
 
         return all_results
