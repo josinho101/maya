@@ -103,6 +103,8 @@ export default function GenerationPage() {
   const [deleteTuTarget, setDeleteTuTarget] = useState(null);
   const [tuDeleting, setTuDeleting] = useState(false);
 
+  const [tableTestUsers, setTableTestUsers] = useState([]);
+
   const [settingsEnvId,      setSettingsEnvId]      = useState("");
   const [settingsSubTab,     setSettingsSubTab]     = useState("authentication");
   const [authDraft,          setAuthDraft]          = useState(null);
@@ -144,6 +146,11 @@ export default function GenerationPage() {
     setRevealedTu(new Set());
     if (mainTab === "test_users") fetchTestUsers(tuSelectedEnvId);
   }, [tuSelectedEnvId, mainTab, fetchTestUsers]);
+
+  useEffect(() => {
+    if (!selectedEnvId) { setTableTestUsers([]); return; }
+    listTestUsers(projectId, selectedEnvId).then(setTableTestUsers).catch(() => setTableTestUsers([]));
+  }, [projectId, selectedEnvId]);
 
   // Fires once, the first time this generation is observed having entered
   // the steps phase - covers both the 3s poll noticing the transition and a
@@ -427,6 +434,15 @@ export default function GenerationPage() {
     }
   };
 
+  const handleTcTestUserChange = async (tc, envId, userId) => {
+    const assignments = { ...(tc.test_user_assignments || {}) };
+    if (userId) assignments[envId] = userId;
+    else delete assignments[envId];
+    await editTestCase(projectId, genId, tc.tc_id, { ...tc, test_user_assignments: assignments });
+    await fetchGen();
+    setToast({ open: true, message: "Test user assignment saved" });
+  };
+
   const handleSave = async (updated) => {
     await editTestCase(projectId, genId, updated.tc_id, updated);
     await fetchGen();
@@ -641,7 +657,7 @@ export default function GenerationPage() {
                     sx={{ width: 280 }}
                   />
                 )}
-                {gen.status === "APPROVED" && environments.length > 0 && (
+                {environments.length > 0 && (
                   <Select
                     size="small"
                     value={selectedEnvId}
@@ -1166,7 +1182,8 @@ export default function GenerationPage() {
                       <TableHead>
                         <TableRow>
                           <TableCell sx={{ width: 120 }}>TC ID</TableCell>
-                          <TableCell sx={{ width: 650 }}>Test case</TableCell>
+                          <TableCell sx={{ width: 500 }}>Test case</TableCell>
+                          {result.requires_auth && <TableCell sx={{ width: 160 }}>Test User</TableCell>}
                           <TableCell sx={{ width: 150 }}>Test case Role</TableCell>
                           <TableCell sx={{ width: 70 }}>Expected Status</TableCell>
                           <TableCell align="right" sx={{ width: 90 }}>Actions</TableCell>
@@ -1204,6 +1221,26 @@ export default function GenerationPage() {
                                 )}
                               </Box>
                             </TableCell>
+                            {result.requires_auth && (
+                              <TableCell>
+                                {tableTestUsers.length > 0 ? (
+                                  <Select
+                                    size="small"
+                                    displayEmpty
+                                    value={tc.test_user_assignments?.[selectedEnvId] || ""}
+                                    onChange={(e) => handleTcTestUserChange(tc, selectedEnvId, e.target.value)}
+                                    sx={{ minWidth: 140, fontSize: 13 }}
+                                  >
+                                    <MenuItem value=""><em>None</em></MenuItem>
+                                    {tableTestUsers.map((u) => (
+                                      <MenuItem key={u.id} value={u.id}>{u.username}</MenuItem>
+                                    ))}
+                                  </Select>
+                                ) : (
+                                  <Typography variant="caption" color="text.secondary">—</Typography>
+                                )}
+                              </TableCell>
+                            )}
                             <TableCell>
                               <Chip
                                 label={tc.lifecycle_role || "independent"}
@@ -1231,7 +1268,7 @@ export default function GenerationPage() {
                                   <Tooltip title="Edit test case">
                                     <IconButton
                                       size="small"
-                                      onClick={() => setEditTarget({ tc, endpoint: result.endpoint, method: result.method })}
+                                      onClick={() => setEditTarget({ tc, endpoint: result.endpoint, method: result.method, requiresAuth: result.requires_auth })}
                                     >
                                       <EditIcon fontSize="small" />
                                     </IconButton>
@@ -1265,6 +1302,9 @@ export default function GenerationPage() {
         genId={genId}
         onClose={() => setEditTarget(null)}
         onSave={handleSave}
+        selectedEnvId={selectedEnvId}
+        testUsers={tableTestUsers}
+        requiresAuth={editTarget?.requiresAuth}
       />
 
       <AddTestCaseDialog
@@ -1275,6 +1315,8 @@ export default function GenerationPage() {
         onClose={() => setAddOpen(false)}
         onAdded={() => fetchGen()}
         onScenarioQueued={handleScenarioQueued}
+        selectedEnvId={selectedEnvId}
+        testUsers={tableTestUsers}
       />
 
       <RegenerateDialog

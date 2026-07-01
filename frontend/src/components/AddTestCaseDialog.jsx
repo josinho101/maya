@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   Box, Button, CircularProgress, Alert, Dialog,
   DialogContent, DialogActions, TextField, MenuItem, Tabs, Tab,
+  Chip, Typography, Select, FormControl, InputLabel,
 } from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import { JsonField, StepsField } from "./EditTestCaseDialog";
@@ -21,9 +22,10 @@ const BLANK_FORM = {
   files: {},
   expected_response: { status_code: 200, required_fields: [], field_types: {} },
   steps: [],
+  test_user_assignments: {},
 };
 
-export default function AddTestCaseDialog({ open, projectId, genId, results, onClose, onAdded, onScenarioQueued }) {
+export default function AddTestCaseDialog({ open, projectId, genId, results, onClose, onAdded, onScenarioQueued, selectedEnvId, testUsers }) {
   const [tab, setTab] = useState("manual");
   const [target, setTarget] = useState("");
   const [loadingSample, setLoadingSample] = useState(false);
@@ -41,6 +43,7 @@ export default function AddTestCaseDialog({ open, projectId, genId, results, onC
   const endpoints = (results || []).map((r) => ({ endpoint: r.endpoint, method: r.method }));
   const [method, endpoint] = target ? target.split("::") : ["", ""];
   const controlsDisabled = !target || loadingSample;
+  const requiresAuth = target ? (results || []).find((r) => r.method === method && r.endpoint === endpoint)?.requires_auth : false;
 
   const reset = () => {
     setTab("manual");
@@ -167,6 +170,33 @@ export default function AddTestCaseDialog({ open, projectId, genId, results, onC
                 <MenuItem key={role} value={role}>{role}</MenuItem>
               ))}
             </TextField>
+            {requiresAuth && selectedEnvId && (() => {
+              const selectedUserId = form.test_user_assignments?.[selectedEnvId] || "";
+              const selectedUser = (testUsers || []).find((u) => u.id === selectedUserId);
+              return (
+                <Box sx={{ mb: 2 }}>
+                  <FormControl size="small" fullWidth disabled={controlsDisabled || !testUsers?.length}>
+                    <InputLabel>Test User</InputLabel>
+                    <Select
+                      label="Test User"
+                      value={selectedUserId}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const assignments = { ...(form.test_user_assignments || {}) };
+                        if (val) assignments[selectedEnvId] = val;
+                        else delete assignments[selectedEnvId];
+                        setForm({ ...form, test_user_assignments: assignments });
+                      }}
+                    >
+                      <MenuItem value=""><em>None</em></MenuItem>
+                      {(testUsers || []).map((u) => (
+                        <MenuItem key={u.id} value={u.id}>{u.username}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Box>
+              );
+            })()}
             <JsonField label="Path Params" value={form.path_params || {}} disabled={controlsDisabled}
               onChange={(v) => setForm({ ...form, path_params: v })} />
             <JsonField label="Query Params" value={form.query_params || {}} disabled={controlsDisabled}

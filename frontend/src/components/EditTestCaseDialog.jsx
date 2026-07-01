@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import {
   Box, Button, CircularProgress, Alert, Dialog,
   DialogContent, DialogActions, TextField, Chip, Typography,
+  Select, MenuItem, FormControl, InputLabel,
 } from "@mui/material";
 import FileFieldEditor from "./FileFieldEditor";
 import ClosableDialogTitle from "./ClosableDialogTitle";
@@ -52,7 +53,7 @@ export function StepsField({ label, value, onChange, disabled }) {
   );
 }
 
-export default function EditTestCaseDialog({ open, tc, endpoint, method, projectId, genId, onClose, onSave }) {
+export default function EditTestCaseDialog({ open, tc, endpoint, method, projectId, genId, onClose, onSave, selectedEnvId, testUsers, requiresAuth }) {
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
@@ -109,6 +110,33 @@ export default function EditTestCaseDialog({ open, tc, endpoint, method, project
           value={form.test_scenario || ""}
           onChange={(e) => setForm({ ...form, test_scenario: e.target.value })}
         />
+        {requiresAuth && selectedEnvId && (() => {
+          const selectedUserId = form.test_user_assignments?.[selectedEnvId] || "";
+          const selectedUser = (testUsers || []).find((u) => u.id === selectedUserId);
+          return (
+            <Box sx={{ mb: 2 }}>
+              <FormControl size="small" fullWidth disabled={!testUsers?.length}>
+                <InputLabel>Test User</InputLabel>
+                <Select
+                  label="Test User"
+                  value={selectedUserId}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const assignments = { ...(form.test_user_assignments || {}) };
+                    if (val) assignments[selectedEnvId] = val;
+                    else delete assignments[selectedEnvId];
+                    setForm({ ...form, test_user_assignments: assignments });
+                  }}
+                >
+                  <MenuItem value=""><em>None</em></MenuItem>
+                  {(testUsers || []).map((u) => (
+                    <MenuItem key={u.id} value={u.id}>{u.username}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+          );
+        })()}
         <JsonField label="Path Params" value={form.path_params || {}}
           onChange={(v) => setForm({ ...form, path_params: v })} />
         <JsonField label="Query Params" value={form.query_params || {}}

@@ -20,7 +20,7 @@ import LockIcon from "@mui/icons-material/Lock";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   getExecution, listExecutions, executeGeneration, getReportUrl,
-  getGeneration, editTestCase, deleteTestCase,
+  getGeneration, editTestCase, deleteTestCase, listTestUsers,
 } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import StatusChip from "../components/StatusChip";
@@ -65,6 +65,7 @@ function ExecutionPageInner() {
   const [editTc, setEditTc] = useState(null);
   const [deleteTc, setDeleteTc] = useState(null);
   const [tcSearch, setTcSearch] = useState("");
+  const [execTestUsers, setExecTestUsers] = useState([]);
 
   const fetchExec = useCallback(async () => {
     try {
@@ -96,6 +97,9 @@ function ExecutionPageInner() {
     fetchExec().then((data) => {
       if (!data) return;
       fetchGen(data.generation_id);
+      if (data.environment_id) {
+        listTestUsers(projectId, data.environment_id).then(setExecTestUsers).catch(() => {});
+      }
       if (POLLING_STATUSES.includes(data.status)) {
         pollRef.current = setInterval(async () => {
           const d = await getExecution(projectId, execId).catch(() => null);
@@ -125,7 +129,8 @@ function ExecutionPageInner() {
   };
 
   const handleSaveEdit = async (updated) => {
-    await editTestCase(projectId, exec.generation_id, updated.tc_id, updated);
+    const { _requiresAuth, ...payload } = updated;
+    await editTestCase(projectId, exec.generation_id, payload.tc_id, payload);
     await fetchGen(exec.generation_id);
   };
 
@@ -291,6 +296,7 @@ function ExecutionPageInner() {
                             <TableRow>
                               <TableCell sx={{ width: 110 }}>TC ID</TableCell>
                               <TableCell>Scenario</TableCell>
+                              {result.requires_auth && <TableCell sx={{ width: 160 }}>Test User</TableCell>}
                               <TableCell sx={{ width: 130 }}>Role</TableCell>
                               <TableCell sx={{ width: 140 }}>Expected Status</TableCell>
                               <TableCell align="right" sx={{ width: 100 }}>Actions</TableCell>
@@ -301,6 +307,17 @@ function ExecutionPageInner() {
                               <TableRow key={tc.tc_id} hover>
                                 <TableCell sx={{ fontFamily: "monospace", fontSize: 12, overflowWrap: "break-word" }}>{tc.tc_id}</TableCell>
                                 <TableCell sx={{ overflowWrap: "break-word" }}>{tc.test_scenario}</TableCell>
+                                {result.requires_auth && (
+                                  <TableCell>
+                                    {(() => {
+                                      const userId = tc.test_user_assignments?.[exec?.environment_id];
+                                      const user = userId ? execTestUsers.find((u) => u.id === userId) : null;
+                                      return user
+                                        ? <Typography variant="body2">{user.username}</Typography>
+                                        : <Typography variant="caption" color="text.secondary">—</Typography>;
+                                    })()}
+                                  </TableCell>
+                                )}
                                 <TableCell>
                                   <Chip
                                     label={tc.lifecycle_role || "independent"}
@@ -319,7 +336,7 @@ function ExecutionPageInner() {
                                   {isAdmin && (
                                     <Box sx={{ display: "flex", flexWrap: "nowrap", justifyContent: "flex-end" }}>
                                       <Tooltip title="Edit test case">
-                                        <IconButton size="small" onClick={() => setEditTc(tc)}>
+                                        <IconButton size="small" onClick={() => setEditTc({ ...tc, _requiresAuth: result.requires_auth })}>
                                           <EditIcon fontSize="small" />
                                         </IconButton>
                                       </Tooltip>
@@ -421,6 +438,9 @@ function ExecutionPageInner() {
         tc={editTc}
         onClose={() => setEditTc(null)}
         onSave={handleSaveEdit}
+        selectedEnvId={exec?.environment_id}
+        testUsers={execTestUsers}
+        requiresAuth={editTc?._requiresAuth}
       />
 
       <Dialog open={!!deleteTc} onClose={() => setDeleteTc(null)}>

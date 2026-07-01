@@ -30,6 +30,10 @@ def validate_testcase(tc):
         if not isinstance(value, dict):
             raise ValueError(f"{field} must be an object")
 
+    tua = tc.get("test_user_assignments")
+    if tua is not None and not isinstance(tua, dict):
+        raise ValueError("test_user_assignments must be an object")
+
     expected_response = tc.get("expected_response")
     if not isinstance(expected_response, dict):
         raise ValueError("expected_response must be an object")

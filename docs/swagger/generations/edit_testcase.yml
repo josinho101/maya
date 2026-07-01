@@ -37,6 +37,10 @@ requestBody:
           request_data: {type: object}
           files: {type: object}
           expected_response: {type: object}
+          test_user_assignments:
+            type: object
+            additionalProperties: {type: string}
+            description: "Map of environment_id to test_user_id — which test user to authenticate as per environment"
 responses:
   200:
     description: Updated test case
@@ -48,6 +52,9 @@ responses:
             tc_id: {type: string}
             test_scenario: {type: string}
             needs_review: {type: boolean, enum: [false]}
+            test_user_assignments:
+              type: object
+              additionalProperties: {type: string}
   400:
     description: Missing or invalid body
   401:

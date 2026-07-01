@@ -40,6 +40,10 @@ requestBody:
               status_code: {type: integer}
               required_fields: {type: array, items: {type: string}}
               field_types: {type: object}
+          test_user_assignments:
+            type: object
+            additionalProperties: {type: string}
+            description: "Map of environment_id to test_user_id — which test user to authenticate as per environment"
 responses:
   201:
     description: Test case added
