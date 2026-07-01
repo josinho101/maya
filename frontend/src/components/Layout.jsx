@@ -15,7 +15,7 @@ export default function Layout({ children }) {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      <AppBar position="static" elevation={0} sx={{ borderBottom: "1px solid #2A2A4A" }}>
+      <AppBar position="sticky" elevation={0} sx={{ borderBottom: "1px solid #2A2A4A", top: 0, zIndex: (theme) => theme.zIndex.appBar }}>
         <Toolbar variant="dense">
           <Box
             sx={{ display: "flex", alignItems: "center", cursor: "pointer" }}
