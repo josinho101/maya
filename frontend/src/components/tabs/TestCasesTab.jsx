@@ -391,7 +391,7 @@ export default function TestCasesTab({
                 sx={{ width: 280 }}
               />
             )}
-            {environments.length > 0 && (
+            {approvedTc > 0 && environments.length > 0 && (
               <Select
                 size="small"
                 value={selectedEnvId}

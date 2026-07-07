@@ -241,7 +241,7 @@ export default function AddTestCaseDialog({ open, projectId, genId, results, onC
             <TextField
               label="Describe the scenario this test case should cover"
               placeholder='e.g. "Creating a student with a duplicate email should fail with 400"'
-              fullWidth multiline minRows={13} sx={{ mb: 2 }} disabled={controlsDisabled}
+              fullWidth multiline minRows={5} sx={{ mb: 2 }} disabled={controlsDisabled}
               inputProps={{ style: { overflow: "hidden" } }}
               value={scenarioText}
               onChange={(e) => setScenarioText(e.target.value)}

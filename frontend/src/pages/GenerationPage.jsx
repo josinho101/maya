@@ -341,12 +341,12 @@ export default function GenerationPage() {
               }
               value="needs_review"
             />
+            <Tab icon={<HistoryIcon fontSize="small" />} iconPosition="start" label="Generations" value="generations" />
             <Tab icon={<PendingActionsIcon fontSize="small" />} iconPosition="start" label={`Job Queue (${activeJobs.length})`} value="active" />
             <Tab icon={<DoneAllIcon fontSize="small" />} iconPosition="start" label={`Completed Jobs (${completedJobs.length})`} value="completed" />
             <Tab icon={<DnsIcon fontSize="small" />} iconPosition="start" label="Environments" value="environments" />
             <Tab icon={<PersonIcon fontSize="small" />} iconPosition="start" label="Test Users" value="test_users" />
             <Tab icon={<SettingsIcon fontSize="small" />} iconPosition="start" label="Settings" value="settings" />
-            <Tab icon={<HistoryIcon fontSize="small" />} iconPosition="start" label="Generations" value="generations" />
           </Tabs>
 
           {(mainTab === "all" || mainTab === "needs_review") && (
