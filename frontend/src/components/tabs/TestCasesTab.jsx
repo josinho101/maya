@@ -152,8 +152,9 @@ const EndpointAccordion = memo(function EndpointAccordion({
   expandedSteps, duplicatingTcs,
   onToggleSteps, onApprove, onTcTestUserChange, onEdit, onDuplicate, onDelete,
 }) {
+  const [expanded, setExpanded] = useState(false);
   return (
-    <Accordion sx={{ mb: 1 }} TransitionProps={{ unmountOnExit: true, mountOnEnter: true }}>
+    <Accordion sx={{ mb: 1 }} expanded={expanded} onChange={(_, v) => setExpanded(v)}>
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, width: "100%" }}>
           <Chip
@@ -172,7 +173,7 @@ const EndpointAccordion = memo(function EndpointAccordion({
         </Box>
       </AccordionSummary>
       <AccordionDetails sx={{ p: 0 }}>
-        {result.error ? (
+        {expanded && (result.error ? (
           <Alert severity="error" sx={{ m: 2 }}>{result.error}</Alert>
         ) : (
           <Table size="small" sx={{ tableLayout: "fixed" }}>
@@ -209,7 +210,7 @@ const EndpointAccordion = memo(function EndpointAccordion({
               ))}
             </TableBody>
           </Table>
-        )}
+        ))}
       </AccordionDetails>
     </Accordion>
   );
