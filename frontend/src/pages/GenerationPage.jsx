@@ -521,6 +521,16 @@ export default function GenerationPage() {
           <Typography variant="h5" fontWeight={700}>Test Cases</Typography>
         </Box>
         {gen && gen.status !== "APPROVED" && <StatusChip status={gen.status} size="medium" />}
+        {results.some((r) => r.requires_auth) && selectedEnvId && tableTestUsers.length === 0 && (
+          <Tooltip title="Some endpoints require authentication but no test users are configured for the selected environment — tests may fail.">
+            <Chip
+              icon={<LockIcon />}
+              label="Auth needed — no test users configured"
+              color="warning"
+              size="small"
+            />
+          </Tooltip>
+        )}
         {isAdmin && results.length > 0 && (
           <Button
             variant="outlined"
