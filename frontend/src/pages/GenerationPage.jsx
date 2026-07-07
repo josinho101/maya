@@ -64,6 +64,7 @@ export default function GenerationPage() {
   const [environments, setEnvironments] = useState([]);
   const [selectedEnvId, setSelectedEnvId] = useState("");
   const [tableTestUsers, setTableTestUsers] = useState([]);
+  const [testUsersLoading, setTestUsersLoading] = useState(false);
 
   const fetchEnvironments = useCallback(async () => {
     const envs = await listEnvironments(projectId).catch(() => []);
@@ -76,7 +77,11 @@ export default function GenerationPage() {
 
   useEffect(() => {
     if (!selectedEnvId) { setTableTestUsers([]); return; }
-    listTestUsers(projectId, selectedEnvId).then(setTableTestUsers).catch(() => setTableTestUsers([]));
+    setTestUsersLoading(true);
+    listTestUsers(projectId, selectedEnvId)
+      .then(setTableTestUsers)
+      .catch(() => setTableTestUsers([]))
+      .finally(() => setTestUsersLoading(false));
   }, [projectId, selectedEnvId]);
 
   const applyGenUpdate = useCallback((data) => {
@@ -218,7 +223,7 @@ export default function GenerationPage() {
           <Typography variant="h5" fontWeight={700}>Test Cases</Typography>
         </Box>
         {gen && gen.status !== "APPROVED" && <StatusChip status={gen.status} size="medium" />}
-        {results.some((r) => r.requires_auth) && selectedEnvId && tableTestUsers.length === 0 && (
+        {results.some((r) => r.requires_auth) && selectedEnvId && !testUsersLoading && tableTestUsers.length === 0 && (
           <Tooltip title="Some endpoints require authentication but no test users are configured for the selected environment — tests may fail.">
             <Chip
               icon={<LockIcon />}
