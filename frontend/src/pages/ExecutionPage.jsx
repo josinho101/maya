@@ -1,45 +1,45 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Box, Typography, Button, Card, CardContent, CircularProgress, Alert,
-  LinearProgress, Grid, Divider, Chip, List, ListItemButton, ListItemText,
-  ListItemIcon, Tooltip, Accordion, AccordionSummary, AccordionDetails,
-  Table, TableHead, TableRow, TableCell, TableBody, IconButton,
-  TextField, InputAdornment, Dialog, DialogContent, DialogActions,
+  LinearProgress, Divider, List, ListItemButton, ListItemText,
+  ListItemIcon, Tooltip, IconButton,
 } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutlined";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutlined";
 import HistoryIcon from "@mui/icons-material/History";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import LockIcon from "@mui/icons-material/Lock";
+import ScienceIcon from "@mui/icons-material/Science";
 import { useNavigate, useParams } from "react-router-dom";
+import { PieChart, Pie, Cell, Legend, BarChart, Bar, XAxis, YAxis, Tooltip as ChartTooltip, ResponsiveContainer } from "recharts";
 import {
-  getExecution, listExecutions, executeGeneration, getReportUrl,
-  getGeneration, editTestCase, deleteTestCase, listTestUsers,
+  getExecution, listExecutions, executeGeneration, getReportUrl, getExecutionResults,
 } from "../api/client";
-import { useAuth } from "../context/AuthContext";
 import StatusChip from "../components/StatusChip";
-import EditTestCaseDialog from "../components/EditTestCaseDialog";
-import ClosableDialogTitle from "../components/ClosableDialogTitle";
 
 const POLLING_STATUSES = ["PENDING", "RUNNING"];
-const METHOD_COLOR = { GET: "info", POST: "success", PUT: "warning", PATCH: "warning", DELETE: "error" };
-const LIFECYCLE_ROLE_COLOR = {
-  create: "success", read: "info", update: "warning", delete: "error",
-  verify_create: "secondary", verify_update: "secondary", verify_delete: "secondary",
+
+const PIE_COLORS = {
+  passed:  "#66BB6A",
+  failed:  "#EF5350",
+  skipped: "#FFB74D",
+};
+
+const METHOD_COLORS = {
+  GET:    "#61AFFE",
+  POST:   "#49CC90",
+  PUT:    "#FCA130",
+  PATCH:  "#50E3C2",
+  DELETE: "#F93E3E",
 };
 
 function SummaryCard({ label, value, color }) {
   return (
     <Card>
-      <CardContent sx={{ textAlign: "center" }}>
-        <Typography variant="h3" fontWeight={700} color={color}>{value ?? "—"}</Typography>
-        <Typography variant="body2" color="text.secondary">{label}</Typography>
+      <CardContent sx={{ textAlign: "center", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+        <Typography variant="h5" fontWeight={700} sx={{ fontSize: "3rem", color }}>{value ?? "—"}</Typography>
+        <Typography variant="caption" color="text.secondary">{label}</Typography>
       </CardContent>
     </Card>
   );
@@ -54,18 +54,13 @@ function ExecutionPageInner() {
   const { projectId, execId } = useParams();
   const nav = useNavigate();
   const pollRef = useRef(null);
-  const { isAdmin } = useAuth();
 
   const [exec, setExec] = useState(null);
-  const [gen, setGen] = useState(null);
   const [history, setHistory] = useState([]);
+  const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [rerunning, setRerunning] = useState(false);
-  const [editTc, setEditTc] = useState(null);
-  const [deleteTc, setDeleteTc] = useState(null);
-  const [tcSearch, setTcSearch] = useState("");
-  const [execTestUsers, setExecTestUsers] = useState([]);
 
   const fetchExec = useCallback(async () => {
     try {
@@ -81,26 +76,16 @@ function ExecutionPageInner() {
 
   const fetchHistory = useCallback(async () => {
     try {
-      const all = await listExecutions(projectId);
-      setHistory(all);
-    } catch { /* ignore */ }
-  }, [projectId]);
-
-  const fetchGen = useCallback(async (genId) => {
-    try {
-      const data = await getGeneration(projectId, genId);
-      setGen(data);
+      setHistory(await listExecutions(projectId));
     } catch { /* ignore */ }
   }, [projectId]);
 
   useEffect(() => {
     fetchExec().then((data) => {
       if (!data) return;
-      fetchGen(data.generation_id);
-      if (data.environment_id) {
-        listTestUsers(projectId, data.environment_id).then(setExecTestUsers).catch(() => {});
-      }
-      if (POLLING_STATUSES.includes(data.status)) {
+      if (data.status === "COMPLETED") {
+        getExecutionResults(projectId, execId).then(setResults).catch(() => {});
+      } else if (POLLING_STATUSES.includes(data.status)) {
         pollRef.current = setInterval(async () => {
           const d = await getExecution(projectId, execId).catch(() => null);
           if (d) {
@@ -108,6 +93,9 @@ function ExecutionPageInner() {
             if (!POLLING_STATUSES.includes(d.status)) {
               clearInterval(pollRef.current);
               fetchHistory();
+              if (d.status === "COMPLETED") {
+                getExecutionResults(projectId, execId).then(setResults).catch(() => {});
+              }
             }
           }
         }, 5000);
@@ -115,7 +103,7 @@ function ExecutionPageInner() {
     });
     fetchHistory();
     return () => clearInterval(pollRef.current);
-  }, [projectId, execId, fetchExec, fetchHistory, fetchGen]);
+  }, [projectId, execId, fetchExec, fetchHistory]);
 
   const handleRerun = async () => {
     try {
@@ -128,24 +116,36 @@ function ExecutionPageInner() {
     }
   };
 
-  const handleSaveEdit = async (updated) => {
-    const { _requiresAuth, ...payload } = updated;
-    await editTestCase(projectId, exec.generation_id, payload.tc_id, payload);
-    await fetchGen(exec.generation_id);
-  };
-
-  const handleDelete = async () => {
-    await deleteTestCase(projectId, exec.generation_id, deleteTc.tc_id);
-    setDeleteTc(null);
-    await fetchGen(exec.generation_id);
-  };
-
   if (loading) return <Box sx={{ display: "flex", justifyContent: "center", mt: 8 }}><CircularProgress /></Box>;
 
   const summary = exec?.summary;
-  const tcResults = gen?.testcases?.results || [];
-  const totalTc = tcResults.reduce((n, r) => n + (r.test_cases?.length || 0), 0);
   const canRerun = exec?.status === "COMPLETED" || exec?.status === "FAILED";
+
+  const execDuration = (() => {
+    if (!exec?.started_at || !exec?.completed_at) return "—";
+    const ms = new Date(exec.completed_at) - new Date(exec.started_at);
+    if (ms < 1000) return `${ms}ms`;
+    if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+    return `${Math.floor(ms / 60000)}m ${Math.round((ms % 60000) / 1000)}s`;
+  })();
+
+  const pieData = summary
+    ? [
+        { name: "Passed",  value: summary.passed,  color: PIE_COLORS.passed  },
+        { name: "Failed",  value: summary.failed,  color: PIE_COLORS.failed  },
+        { name: "Skipped", value: summary.skipped, color: PIE_COLORS.skipped },
+      ].filter((d) => d.value > 0)
+    : [];
+
+  const methodData = results.length
+    ? Object.entries(
+        results.reduce((acc, r) => {
+          const m = r.request?.method;
+          if (m) acc[m] = (acc[m] || 0) + 1;
+          return acc;
+        }, {})
+      ).map(([method, count]) => ({ method, count }))
+    : [];
 
   return (
     <Box>
@@ -158,14 +158,44 @@ function ExecutionPageInner() {
           </IconButton>
           <Typography variant="h5" fontWeight={700}>Execution</Typography>
         </Box>
-        <Chip label={`ID: ${execId}`} size="small" sx={{ fontFamily: "monospace" }} />
-        {exec?.environment_name && <Chip label={exec.environment_name} size="small" color="secondary" variant="outlined" />}
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}>
+          {exec?.status === "COMPLETED" && (
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<ScienceIcon />}
+              onClick={() => nav(`/projects/${projectId}/generations/${exec.generation_id}`)}
+            >
+              View Test Cases
+            </Button>
+          )}
+          {canRerun && (
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={rerunning ? <CircularProgress size={14} /> : <PlayArrowIcon />}
+              onClick={handleRerun}
+              disabled={rerunning}
+            >
+              Re-run Tests
+            </Button>
+          )}
+          {exec?.status === "COMPLETED" && (
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<OpenInNewIcon />}
+              onClick={() => window.open(getReportUrl(projectId, execId), "_blank")}
+            >
+              View Full Report
+            </Button>
+          )}
+        </Box>
       </Box>
 
       <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start", flexDirection: { xs: "column", md: "row" } }}>
         {/* Left: results */}
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          {/* Polling */}
           {exec && POLLING_STATUSES.includes(exec.status) && (
             <Card sx={{ mb: 3 }}>
               <CardContent>
@@ -180,183 +210,97 @@ function ExecutionPageInner() {
             </Card>
           )}
 
-          {/* Failed */}
           {exec?.status === "FAILED" && (
             <Alert severity="error" sx={{ mb: 3 }}>
               Execution failed: {exec.error || "Unknown error"}
             </Alert>
           )}
 
-          {/* Completed summary */}
-          {exec?.status === "COMPLETED" && summary && (
-            <Grid container spacing={2} sx={{ mb: 3 }}>
-              <Grid item xs={6} sm={3}>
-                <SummaryCard label="Total" value={summary.total} color="text.primary" />
-              </Grid>
-              <Grid item xs={6} sm={3}>
-                <SummaryCard label="Passed" value={summary.passed} color="success.main" />
-              </Grid>
-              <Grid item xs={6} sm={3}>
-                <SummaryCard label="Failed" value={summary.failed} color="error.main" />
-              </Grid>
-              <Grid item xs={6} sm={3}>
-                <SummaryCard label="Skipped" value={summary.skipped} color="text.secondary" />
-              </Grid>
-              <Grid item xs={6} sm={3}>
-                <SummaryCard label="Success Rate" value={`${summary.success_rate}%`}
-                  color={summary.success_rate >= 80 ? "success.main" : "warning.main"} />
-              </Grid>
-            </Grid>
-          )}
-
-          {/* Action buttons */}
-          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 3, alignItems: "center" }}>
-            {exec?.status === "COMPLETED" && (
-              <Button
-                variant="contained"
-                startIcon={<OpenInNewIcon />}
-                onClick={() => window.open(getReportUrl(projectId, execId), "_blank")}
-              >
-                View Full Report
-              </Button>
-            )}
-            {canRerun && (
-              <Button
-                variant="outlined"
-                startIcon={rerunning ? <CircularProgress size={16} /> : <PlayArrowIcon />}
-                onClick={handleRerun}
-                disabled={rerunning}
-              >
-                Re-run Tests
-              </Button>
-            )}
-            {tcResults.length > 0 && (
-              <TextField
-                size="small"
-                placeholder="Search by TC ID or Scenario.."
-                value={tcSearch}
-                onChange={(e) => setTcSearch(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon fontSize="small" />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{ width: 280, ml: "auto" }}
-              />
-            )}
-          </Box>
-
-          {/* Test cases accordion with inline editing */}
-          {tcResults.length > 0 && (
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>
-                Test Cases ({totalTc})
-              </Typography>
-              {tcResults.map((result, idx) => {
-                const q = tcSearch.trim().toLowerCase();
-                const filteredCases = q
-                  ? (result.test_cases || []).filter(
-                      (tc) =>
-                        tc.tc_id?.toLowerCase().includes(q) ||
-                        tc.test_scenario?.toLowerCase().includes(q)
-                    )
-                  : (result.test_cases || []);
-                if (filteredCases.length === 0) return null;
-                return (
-                  <Accordion key={idx} sx={{ mb: 1, width: "100%" }} TransitionProps={{ unmountOnExit: true }}>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, width: "100%" }}>
-                        <Chip
-                          label={result.method || "?"}
-                          size="small"
-                          color={METHOD_COLOR[result.method] || "default"}
-                        />
-                        <Typography fontFamily="monospace" fontSize={14}>{result.endpoint}</Typography>
-                        <Chip
-                          label={`${filteredCases.length}${q ? `/${result.test_cases?.length || 0}` : ""} cases`}
-                          size="small"
-                          variant="outlined"
-                        />
-                        {result.error && <Chip label="error" size="small" color="error" />}
-                        {result.requires_auth && (
-                          <Tooltip title="Requires authentication">
-                            <LockIcon fontSize="small" sx={{ ml: "auto", mr: 1.5 }} />
-                          </Tooltip>
-                        )}
-                      </Box>
-                    </AccordionSummary>
-                    <AccordionDetails sx={{ p: 0 }}>
-                      {result.error ? (
-                        <Alert severity="error" sx={{ m: 2 }}>{result.error}</Alert>
-                      ) : (
-                        <Table size="small" sx={{ tableLayout: "fixed" }}>
-                          <TableHead>
-                            <TableRow>
-                              <TableCell sx={{ width: 110 }}>TC ID</TableCell>
-                              <TableCell>Scenario</TableCell>
-                              {result.requires_auth && <TableCell sx={{ width: 160 }}>Test User</TableCell>}
-                              <TableCell sx={{ width: 130 }}>Role</TableCell>
-                              <TableCell sx={{ width: 140 }}>Expected Status</TableCell>
-                              <TableCell align="right" sx={{ width: 100 }}>Actions</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {filteredCases.map((tc) => (
-                              <TableRow key={tc.tc_id} hover>
-                                <TableCell sx={{ fontFamily: "monospace", fontSize: 12, overflowWrap: "break-word" }}>{tc.tc_id}</TableCell>
-                                <TableCell sx={{ overflowWrap: "break-word" }}>{tc.test_scenario}</TableCell>
-                                {result.requires_auth && (
-                                  <TableCell>
-                                    {(() => {
-                                      const userId = tc.test_user_assignments?.[exec?.environment_id];
-                                      const user = userId ? execTestUsers.find((u) => u.id === userId) : null;
-                                      return user
-                                        ? <Typography variant="body2">{user.username}</Typography>
-                                        : <Typography variant="caption" color="text.secondary">—</Typography>;
-                                    })()}
-                                  </TableCell>
-                                )}
-                                <TableCell>
-                                  <Chip
-                                    label={tc.lifecycle_role || "independent"}
-                                    size="small"
-                                    color={LIFECYCLE_ROLE_COLOR[tc.lifecycle_role] || "default"}
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <Chip
-                                    label={tc.expected_response?.status_code || "?"}
-                                    size="small"
-                                    color={tc.expected_response?.status_code < 300 ? "success" : "warning"}
-                                  />
-                                </TableCell>
-                                <TableCell align="right">
-                                  {isAdmin && (
-                                    <Box sx={{ display: "flex", flexWrap: "nowrap", justifyContent: "flex-end" }}>
-                                      <Tooltip title="Edit test case">
-                                        <IconButton size="small" onClick={() => setEditTc({ ...tc, _requiresAuth: result.requires_auth })}>
-                                          <EditIcon fontSize="small" />
-                                        </IconButton>
-                                      </Tooltip>
-                                      <Tooltip title="Delete test case">
-                                        <IconButton size="small" color="error" onClick={() => setDeleteTc(tc)}>
-                                          <DeleteIcon fontSize="small" />
-                                        </IconButton>
-                                      </Tooltip>
-                                    </Box>
-                                  )}
-                                </TableCell>
-                              </TableRow>
+          {exec?.status === "COMPLETED" && summary && pieData.length > 0 && (
+            <Box sx={{ display: "flex", gap: 2, alignItems: "stretch" }}>
+              {/* Left: 2 tiles + method bar chart */}
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, flex: 1 }}>
+                <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
+                  <SummaryCard label="Total Testcases" value={summary.total} color="text.primary" />
+                  <SummaryCard label="Total Execution Time" value={execDuration} color="text.primary" />
+                </Box>
+                <Card sx={{ flex: 1 }}>
+                  <CardContent>
+                    <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                      Requests by Method
+                    </Typography>
+                    {methodData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={220}>
+                        <BarChart data={methodData} barCategoryGap="30%">
+                          <XAxis dataKey="method" tick={{ fontSize: 11 }} />
+                          <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                          <ChartTooltip />
+                          <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                            {methodData.map((d) => (
+                              <Cell key={d.method} fill={METHOD_COLORS[d.method] ?? "#90CAF9"} />
                             ))}
-                          </TableBody>
-                        </Table>
-                      )}
-                    </AccordionDetails>
-                  </Accordion>
-                );
-              })}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+                        <CircularProgress size={24} />
+                      </Box>
+                    )}
+                  </CardContent>
+                </Card>
+              </Box>
+
+              {/* Right: pie chart */}
+              <Card sx={{ flex: 1 }}>
+                <CardContent>
+                  <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                    Execution Outcome
+                  </Typography>
+                  <Box sx={{ position: "relative", display: "flex", justifyContent: "center", mt: 5 }}>
+                    <PieChart width={360} height={300}>
+                      <Pie
+                        data={pieData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="48%"
+                        innerRadius={85}
+                        outerRadius={130}
+                        paddingAngle={3}
+                        cornerRadius={6}
+                      >
+                        {pieData.map((d) => (
+                          <Cell key={d.name} fill={d.color} stroke="#1A1A2E" strokeWidth={3} />
+                        ))}
+                      </Pie>
+                      <Legend
+                        wrapperStyle={{ fontSize: 12 }}
+                        iconType="circle"
+                        iconSize={8}
+                        formatter={(value, entry) => `${value} (${entry.payload.value})`}
+                      />
+                    </PieChart>
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: "44%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        textAlign: "center",
+                        pointerEvents: "none",
+                      }}
+                    >
+                      <Typography variant="h5" fontWeight={700}>
+                        {summary.success_rate}%
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Pass Rate
+                      </Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
             </Box>
           )}
         </Box>
@@ -367,14 +311,14 @@ function ExecutionPageInner() {
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
                 <HistoryIcon fontSize="small" color="primary" />
-                <Typography fontWeight={600}>Execution History</Typography>
+                <Typography fontWeight={600}>Last 5 Execution History</Typography>
               </Box>
               <Divider sx={{ mb: 1 }} />
               {history.length === 0 ? (
                 <Typography variant="body2" color="text.secondary">No history</Typography>
               ) : (
                 <List dense disablePadding>
-                  {history.map((h) => {
+                  {history.slice(0, 5).map((h) => {
                     const isCurrent = h.id === execId;
                     return (
                       <ListItemButton
@@ -385,8 +329,10 @@ function ExecutionPageInner() {
                       >
                         <ListItemIcon sx={{ minWidth: 32 }}>
                           {h.status === "COMPLETED" ? (
-                            <CheckCircleOutlineIcon fontSize="small"
-                              color={h.summary?.failed > 0 ? "warning" : "success"} />
+                            <CheckCircleOutlineIcon
+                              fontSize="small"
+                              color={h.summary?.failed > 0 ? "warning" : "success"}
+                            />
                           ) : h.status === "FAILED" ? (
                             <ErrorOutlineIcon fontSize="small" color="error" />
                           ) : (
@@ -397,11 +343,6 @@ function ExecutionPageInner() {
                           primary={
                             <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
                               <StatusChip status={h.status} />
-                              {h.summary && (
-                                <Typography variant="caption" color="text.secondary">
-                                  {h.summary.passed}/{h.summary.total}
-                                </Typography>
-                              )}
                             </Box>
                           }
                           secondary={
@@ -415,8 +356,12 @@ function ExecutionPageInner() {
                           <Tooltip title="Open report">
                             <span>
                               <Button
-                                size="small" sx={{ minWidth: 0, p: 0.5 }}
-                                onClick={(e) => { e.stopPropagation(); window.open(getReportUrl(projectId, h.id), "_blank"); }}
+                                size="small"
+                                sx={{ minWidth: 0, p: 0.5 }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open(getReportUrl(projectId, h.id), "_blank");
+                                }}
                               >
                                 <OpenInNewIcon fontSize="small" />
                               </Button>
@@ -432,27 +377,6 @@ function ExecutionPageInner() {
           </Card>
         </Box>
       </Box>
-
-      <EditTestCaseDialog
-        open={!!editTc}
-        tc={editTc}
-        onClose={() => setEditTc(null)}
-        onSave={handleSaveEdit}
-        selectedEnvId={exec?.environment_id}
-        testUsers={execTestUsers}
-        requiresAuth={editTc?._requiresAuth}
-      />
-
-      <Dialog open={!!deleteTc} onClose={() => setDeleteTc(null)}>
-        <ClosableDialogTitle onClose={() => setDeleteTc(null)}>Delete Test Case</ClosableDialogTitle>
-        <DialogContent>
-          <Typography>Delete <strong>{deleteTc?.tc_id}</strong>? This cannot be undone.</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button variant="outlined" onClick={() => setDeleteTc(null)}>Cancel</Button>
-          <Button variant="contained" color="error" onClick={handleDelete}>Delete</Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 }
