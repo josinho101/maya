@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogActions,
-  DialogContent, Divider, FormControlLabel, List, ListItem,
-  Alert,
+  DialogContent, Divider, FormControlLabel, List, ListItem
 } from "@mui/material";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -47,11 +46,6 @@ export default function RegenerateDialog({ open, endpoints, loading, onClose, on
         Regenerate Test Cases
       </ClosableDialogTitle>
       <DialogContent>
-        <Alert severity="warning" icon={<WarningAmberIcon />} sx={{ mb: 2 }}>
-          Previously generated test cases will be cleared for the selected endpoints.
-          This action cannot be undone.
-        </Alert>
-
         {loading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
             <CircularProgress size={28} />
