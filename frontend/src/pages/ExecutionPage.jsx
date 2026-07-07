@@ -234,7 +234,7 @@ function ExecutionPageInner() {
                         <BarChart data={methodData} barCategoryGap="30%">
                           <XAxis dataKey="method" tick={{ fontSize: 11 }} />
                           <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                          <ChartTooltip />
+                          <ChartTooltip cursor={{ fill: "transparent" }} contentStyle={{ background: "#fff", border: "none", borderRadius: 6, color: "#000" }} itemStyle={{ color: "#000" }} />
                           <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                             {methodData.map((d) => (
                               <Cell key={d.method} fill={METHOD_COLORS[d.method] ?? "#90CAF9"} />
