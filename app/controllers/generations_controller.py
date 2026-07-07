@@ -582,6 +582,10 @@ def approve(project_id, gen_id):
     gen["status"] = "APPROVED"
     _save_generation(p["slug"], gen)
 
+    meta = _get_meta(p["slug"])
+    meta["current_generation_id"] = gen_id
+    _save_meta(p["slug"], meta)
+
     logger.info("Generation %s approved (project=%s)", gen_id, project_id)
 
     return {"status": "APPROVED", "generation_id": gen_id}

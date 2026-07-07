@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box, Typography, Table, TableBody, TableCell, TableHead, TableRow,
   TablePagination, Radio, IconButton, Tooltip, Chip, CircularProgress,
@@ -20,13 +21,24 @@ function formatDate(iso) {
   });
 }
 
-export default function GenerationsTab({ projectId, thisGenId, isAdmin, onActiveChanged }) {
+export default function GenerationsTab({ projectId, thisGenId, isAdmin, onActiveChanged, onReviewableCountChange }) {
   const [generations, setGenerations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [page, setPage] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [acting, setActing] = useState(false);
+  const pollRef = useRef(null);
+  const prevReviewCountRef = useRef(-1);
+  const nav = useNavigate();
+
+  const reportReviewable = useCallback((gens) => {
+    const count = gens.filter((g) => g.status === "REVIEW").length;
+    if (count !== prevReviewCountRef.current) {
+      prevReviewCountRef.current = count;
+      if (onReviewableCountChange) onReviewableCountChange(count);
+    }
+  }, [onReviewableCountChange]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -34,14 +46,31 @@ export default function GenerationsTab({ projectId, thisGenId, isAdmin, onActive
     try {
       const gens = await listGenerations(projectId);
       setGenerations(gens);
+      reportReviewable(gens);
+      if (gens.some((g) => IN_PROGRESS.includes(g.status)) && !pollRef.current) {
+        pollRef.current = setInterval(async () => {
+          try {
+            const updated = await listGenerations(projectId);
+            setGenerations(updated);
+            reportReviewable(updated);
+            if (!updated.some((g) => IN_PROGRESS.includes(g.status))) {
+              clearInterval(pollRef.current);
+              pollRef.current = null;
+            }
+          } catch { /* ignore poll errors */ }
+        }, 3000);
+      }
     } catch {
       setError("Failed to load generations");
     } finally {
       setLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, reportReviewable]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
+  }, [load]);
 
   const handleSetActive = async (genId) => {
     setActing(true);
@@ -127,7 +156,10 @@ export default function GenerationsTab({ projectId, thisGenId, isAdmin, onActive
                     onChange={() => handleSetActive(gen.id)}
                   />
                 </TableCell>
-                <TableCell sx={{ fontFamily: "monospace", fontSize: 13 }}>
+                <TableCell
+                  sx={{ fontFamily: "monospace", fontSize: 13, cursor: "pointer", "&:hover": { textDecoration: "underline" } }}
+                  onClick={() => nav(`/projects/${projectId}/generations/${gen.id}`)}
+                >
                   {gen.id}
                   {isCurrent && (
                     <Chip label="current view" size="small" variant="outlined" sx={{ ml: 1, fontSize: 10 }} />

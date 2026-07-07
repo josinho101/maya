@@ -230,6 +230,9 @@ export default function ProjectDetailPage() {
     generations.find((g) => g.is_active) ||
     generations.find((g) => ["REVIEW", "APPROVED", "STOPPED"].includes(g.status)) ||
     generations[0];
+  const prevGen =
+    generations.find((g) => g.is_active) ||
+    generations.find((g) => ["REVIEW", "APPROVED", "STOPPED"].includes(g.status));
 
   const genRows = generations.map((g) => ({ kind: "generation", id: g.id, status: g.status, created_at: g.created_at }));
   const scenarioRows = scenarioJobs.map((j) => ({ kind: "scenario", id: j.id, status: j.status, created_at: j.created_at, job: j }));
@@ -325,14 +328,13 @@ export default function ProjectDetailPage() {
                     </Select>
                   </>
                 )}
-                {swagger && (activeGen || generating) && (
+                {swagger && (activeGen || generating) && prevGen && (
                   <Button
                     variant="outlined" color="warning" size="small"
                     startIcon={<CircularProgress size={16} />}
-                    onClick={activeGen ? () => nav(`/projects/${projectId}/generations/${activeGen.id}`) : undefined}
-                    disabled={!activeGen}
+                    onClick={() => nav(`/projects/${projectId}/generations/${prevGen.id}`)}
                   >
-                    View Progress
+                    View Testcases
                   </Button>
                 )}
                 {swagger && !activeGen && !generating && totalTestCases > 0 && (
@@ -451,8 +453,12 @@ export default function ProjectDetailPage() {
                       <TableCell>—</TableCell>
                       <TableCell><StatusChip status={row.status} /></TableCell>
                       <TableCell>
-                        <Button size="small" onClick={() => nav(`/projects/${projectId}/generations/${row.id}`)}>
-                          View Progress
+                        <Button
+                          size="small"
+                          disabled={!prevGen}
+                          onClick={prevGen ? () => nav(`/projects/${projectId}/generations/${prevGen.id}`) : undefined}
+                        >
+                          View Testcases
                         </Button>
                       </TableCell>
                       <TableCell align="right">

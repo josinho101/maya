@@ -63,6 +63,9 @@ export default function GenerationPage() {
   const [toast, setToast] = useState({ open: false, message: "" });
   const stepsToastFiredRef = useRef(false);
 
+  const [reviewableCount, setReviewableCount] = useState(0);
+  const prevReviewCountRef = useRef(0);
+
   const [environments, setEnvironments] = useState([]);
   const [selectedEnvId, setSelectedEnvId] = useState("");
   const [tableTestUsers, setTableTestUsers] = useState([]);
@@ -177,6 +180,14 @@ export default function GenerationPage() {
     setRegenOpen(true);
   };
 
+  const handleReviewableCountChange = useCallback((count) => {
+    setReviewableCount(count);
+    if (count > prevReviewCountRef.current) {
+      setToast({ open: true, message: "A generation is ready for approval — see Generations tab." });
+    }
+    prevReviewCountRef.current = count;
+  }, []);
+
   const handleRegenerateConfirm = async (endpointsToRegenerate) => {
     setRegenOpen(false);
     try {
@@ -184,7 +195,8 @@ export default function GenerationPage() {
       const body = endpointsToRegenerate !== null ? { endpoints_to_regenerate: endpointsToRegenerate } : {};
       const res = await triggerGeneration(projectId, body);
       if (!res?.generation_id) throw new Error("Invalid response from server");
-      nav(`/projects/${projectId}/generations/${res.generation_id}`);
+      setToast({ open: true, message: "New generation started — track progress in the Generations tab." });
+      setMainTab("generations");
     } catch (e) {
       setError(e.response?.data?.error || e.message || "Failed to trigger regeneration");
     }
@@ -341,7 +353,16 @@ export default function GenerationPage() {
               }
               value="needs_review"
             />
-            <Tab icon={<HistoryIcon fontSize="small" />} iconPosition="start" label="Generations" value="generations" />
+            <Tab
+              icon={<HistoryIcon fontSize="small" />}
+              iconPosition="start"
+              label={
+                <Badge badgeContent={reviewableCount} color="warning" max={9}>
+                  <Box sx={{ pr: reviewableCount > 0 ? 1.5 : 0 }}>Generations</Box>
+                </Badge>
+              }
+              value="generations"
+            />
             <Tab icon={<PendingActionsIcon fontSize="small" />} iconPosition="start" label={`Job Queue (${activeJobs.length})`} value="active" />
             <Tab icon={<DoneAllIcon fontSize="small" />} iconPosition="start" label={`Completed Jobs (${completedJobs.length})`} value="completed" />
             <Tab icon={<DnsIcon fontSize="small" />} iconPosition="start" label="Environments" value="environments" />
@@ -406,6 +427,8 @@ export default function GenerationPage() {
               projectId={projectId}
               thisGenId={genId}
               isAdmin={isAdmin}
+              onReviewableCountChange={handleReviewableCountChange}
+              onActiveChanged={(newActiveGenId) => nav(`/projects/${projectId}/generations/${newActiveGenId}`)}
             />
           )}
         </>
