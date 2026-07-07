@@ -100,3 +100,18 @@ def list_testcase_files(project_id, gen_id):
 @swag_from("../../docs/swagger/generations/stop_generation.yml")
 def stop_generation(project_id, gen_id):
     return jsonify(generations_controller.request_stop_generation(project_id, gen_id)), 202
+
+
+@bp.post("/projects/<project_id>/generations/<gen_id>/set-active")
+@require_admin
+@swag_from("../../docs/swagger/generations/set_active_generation.yml")
+def set_active_generation(project_id, gen_id):
+    return jsonify(generations_controller.set_active_generation(project_id, gen_id))
+
+
+@bp.delete("/projects/<project_id>/generations/<gen_id>")
+@require_admin
+@swag_from("../../docs/swagger/generations/delete_generation.yml")
+def delete_generation(project_id, gen_id):
+    generations_controller.delete_generation(project_id, gen_id)
+    return "", 204

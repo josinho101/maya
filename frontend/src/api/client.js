@@ -60,6 +60,10 @@ export const approveGeneration = (id, gid) =>
   api.post(`/projects/${id}/generations/${gid}/approve`).then((r) => r.data);
 export const stopGeneration = (id, gid) =>
   api.post(`/projects/${id}/generations/${gid}/stop`).then((r) => r.data);
+export const setActiveGeneration = (id, gid) =>
+  api.post(`/projects/${id}/generations/${gid}/set-active`).then((r) => r.data);
+export const deleteGeneration = (id, gid) =>
+  api.delete(`/projects/${id}/generations/${gid}`).then((r) => r.data);
 
 // Test case sample / file uploads (manual add + edit dialogs)
 export const getTestcaseSample = (id, gid, endpoint, method) =>

@@ -1,0 +1,33 @@
+tags:
+  - Generations
+summary: Delete a generation and its test cases
+description: >
+  Permanently deletes a generation record and its associated test-case files.
+  In-progress generations cannot be deleted. If the deleted generation was the
+  active one, the next most-recent finalised generation is automatically
+  promoted; if only one remains it is auto-selected; if none remain the active
+  generation is cleared.
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    required: true
+    schema:
+      type: string
+  - in: path
+    name: gen_id
+    required: true
+    schema:
+      type: string
+responses:
+  204:
+    description: Generation deleted
+  400:
+    description: Cannot delete an in-progress generation
+  401:
+    description: Authentication required
+  403:
+    description: Admin role required
+  404:
+    description: Project or generation not found

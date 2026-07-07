@@ -1,6 +1,7 @@
 import glob
 import json
 import os
+import shutil
 import threading
 import uuid
 from datetime import datetime, timezone
@@ -10,6 +11,7 @@ from werkzeug.utils import secure_filename
 from app.controllers import BadRequest, NotFound
 from app.controllers.projects_controller import find_project
 from app.storage.json_store import data_path, load_json, new_id, save_json
+from configs.settings import PATHS
 from testcase_generator.testcase_validator import validate_testcase, demote_duplicate_lifecycle_role
 from testcase_generator.testcaseIdGenerator import TCIDGenerator
 from testcase_generator.sample_builder import build_sample_testcase
@@ -18,6 +20,14 @@ from Utils.logger import logger
 
 def _gen_path(slug, gen_id):
     return data_path(slug, "generations", f"{gen_id}.json")
+
+
+def _get_meta(slug):
+    return load_json(data_path(slug, "meta.json"), default={})
+
+
+def _save_meta(slug, meta):
+    save_json(data_path(slug, "meta.json"), meta)
 
 
 def get_generation(slug, gen_id):
@@ -123,6 +133,29 @@ def _list_generations(slug):
     return sorted(gens, key=lambda x: x.get("created_at", ""), reverse=True)
 
 
+def _count_testcases(gen):
+    path = gen.get("testcases_path")
+    if not path or not os.path.isfile(path):
+        return 0
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        return sum(len(r.get("test_cases", [])) for r in data.get("results", []))
+    except Exception:
+        return 0
+
+
+def _maybe_set_active_generation(slug, gen_id):
+    meta = _get_meta(slug)
+    finalised = [
+        g for g in _list_generations(slug)
+        if g["status"] in ("REVIEW", "APPROVED", "STOPPED")
+    ]
+    if not meta.get("current_generation_id") or len(finalised) == 1:
+        meta["current_generation_id"] = gen_id
+        _save_meta(slug, meta)
+
+
 def _run_generation(slug, gen_id, parsed_json_path, output_dir, existing_testcases_path, endpoints_to_regenerate):
     gen = get_generation(slug, gen_id)
     gen["status"] = "GENERATING"
@@ -147,10 +180,16 @@ def _run_generation(slug, gen_id, parsed_json_path, output_dir, existing_testcas
         from testcase_generator.step_generator import generate_steps_for_all
         from storage.testcase_storage import TestCaseStorage
 
-        if not endpoints_to_regenerate:
-            TestCaseStorage.delete(output_dir)
-        elif existing_testcases_path:
-            TestCaseStorage.remove_endpoints(existing_testcases_path, endpoints_to_regenerate)
+        if endpoints_to_regenerate and existing_testcases_path:
+            # Partial regen: seed the new gen's dir with a copy of the active
+            # generation's testcases minus the endpoints being regenerated.
+            os.makedirs(output_dir, exist_ok=True)
+            new_seed_path = os.path.join(output_dir, PATHS["testcase_filename"])
+            shutil.copy2(existing_testcases_path, new_seed_path)
+            TestCaseStorage.remove_endpoints(new_seed_path, endpoints_to_regenerate)
+            existing_testcases_path = new_seed_path
+        else:
+            existing_testcases_path = None
 
         llm = LLMClient.get_llm_client()
         generator = TestcaseGenerator(llm)
@@ -200,6 +239,7 @@ def _run_generation(slug, gen_id, parsed_json_path, output_dir, existing_testcas
             logger.info("Generation %s stopped by request, partial results saved to %s", gen_id, saved_file)
         else:
             logger.info("Generation %s completed, testcases saved to %s", gen_id, saved_file)
+            _maybe_set_active_generation(slug, gen_id)
 
     except Exception as e:
         gen = get_generation(slug, gen_id)
@@ -220,16 +260,22 @@ def trigger(project_id, endpoints_to_regenerate=None):
     slug = p["slug"]
     swagger_meta = get_swagger_meta(slug)
 
-    output_dir = swagger_meta["output_dir"]
     parsed_json_path = swagger_meta["parsed_json_path"]
-
-    from storage.testcase_storage import TestCaseStorage
-    if not endpoints_to_regenerate:
-        existing = None
-    else:
-        existing = TestCaseStorage.get_existing_testcases(output_dir)
+    base_output_dir = swagger_meta["output_dir"]
 
     gen_id = new_id()
+    output_dir = os.path.join(base_output_dir, gen_id)
+
+    # For partial regen, find existing testcases from the active generation.
+    existing = None
+    if endpoints_to_regenerate:
+        meta = _get_meta(slug)
+        active_gen_id = meta.get("current_generation_id")
+        if active_gen_id:
+            active_gen = get_generation(slug, active_gen_id)
+            if active_gen and active_gen.get("testcases_path"):
+                existing = active_gen["testcases_path"]
+
     now = datetime.now(timezone.utc).isoformat()
     gen = {
         "id": gen_id,
@@ -259,18 +305,31 @@ def list_all(project_id):
     p = find_project(project_id)
     if not p:
         raise NotFound("project not found")
-    return _list_generations(p["slug"])
+
+    slug = p["slug"]
+    meta = _get_meta(slug)
+    active_gen_id = meta.get("current_generation_id")
+
+    gens = _list_generations(slug)
+    for gen in gens:
+        gen["is_active"] = gen["id"] == active_gen_id
+        gen["test_case_count"] = _count_testcases(gen)
+
+    return gens
 
 
 def get(project_id, gen_id):
     p, gen = _get_project_and_generation(project_id, gen_id)
 
-    if gen["status"] in ("REVIEW", "APPROVED") and gen.get("testcases_path"):
+    if gen["status"] in ("REVIEW", "APPROVED", "STOPPED") and gen.get("testcases_path"):
         try:
             with open(gen["testcases_path"], encoding="utf-8") as f:
                 gen["testcases"] = _backfill_provenance(json.load(f))
         except Exception:
             gen["testcases"] = None
+
+    meta = _get_meta(p["slug"])
+    gen["is_active"] = gen["id"] == meta.get("current_generation_id")
 
     return gen
 
@@ -526,3 +585,54 @@ def approve(project_id, gen_id):
     logger.info("Generation %s approved (project=%s)", gen_id, project_id)
 
     return {"status": "APPROVED", "generation_id": gen_id}
+
+
+def set_active_generation(project_id, gen_id):
+    p, gen = _get_project_and_generation(project_id, gen_id)
+
+    if gen["status"] not in ("REVIEW", "APPROVED", "STOPPED"):
+        raise BadRequest("can only activate a finalised generation")
+
+    slug = p["slug"]
+    meta = _get_meta(slug)
+    meta["current_generation_id"] = gen_id
+    _save_meta(slug, meta)
+
+    logger.info("Active generation set to %s (project=%s)", gen_id, project_id)
+
+    return {"current_generation_id": gen_id}
+
+
+def delete_generation(project_id, gen_id):
+    p, gen = _get_project_and_generation(project_id, gen_id)
+
+    in_progress = ("PENDING", "GENERATING", "SCENARIOS_READY", "GENERATING_STEPS")
+    if gen["status"] in in_progress:
+        raise BadRequest("cannot delete an in-progress generation")
+
+    slug = p["slug"]
+
+    # Remove generation metadata file
+    gen_file = _gen_path(slug, gen_id)
+    if os.path.isfile(gen_file):
+        os.remove(gen_file)
+
+    # Remove per-generation output directory if it exists
+    output_dir = gen.get("output_dir", "")
+    if output_dir and os.path.isdir(output_dir):
+        shutil.rmtree(output_dir, ignore_errors=True)
+
+    # Recalculate the active generation
+    remaining = [
+        g for g in _list_generations(slug)
+        if g["status"] in ("REVIEW", "APPROVED", "STOPPED")
+    ]
+    meta = _get_meta(slug)
+    if meta.get("current_generation_id") == gen_id or len(remaining) == 1:
+        next_gen = remaining[0] if remaining else None
+        meta["current_generation_id"] = next_gen["id"] if next_gen else None
+        _save_meta(slug, meta)
+
+    logger.info("Generation %s deleted (project=%s)", gen_id, project_id)
+
+    return {}

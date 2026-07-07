@@ -15,6 +15,7 @@ import DnsIcon from "@mui/icons-material/Dns";
 import PersonIcon from "@mui/icons-material/Person";
 import SettingsIcon from "@mui/icons-material/Settings";
 import LockIcon from "@mui/icons-material/Lock";
+import HistoryIcon from "@mui/icons-material/History";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   getGeneration, triggerGeneration, stopGeneration,
@@ -31,11 +32,12 @@ import JobQueueTab from "../components/tabs/JobQueueTab";
 import EnvironmentsTab from "../components/tabs/EnvironmentsTab";
 import TestUsersTab from "../components/tabs/TestUsersTab";
 import SettingsTab from "../components/tabs/SettingsTab";
+import GenerationsTab from "../components/tabs/GenerationsTab";
 
 const POLLING_STATUSES = ["PENDING", "GENERATING", "SCENARIOS_READY", "GENERATING_STEPS"];
 const STEPS_PHASE_STATUSES = ["SCENARIOS_READY", "GENERATING_STEPS"];
 const ACTIVE_JOB_STATUSES = ["QUEUED", "RUNNING"];
-const VALID_TABS = ["all", "needs_review", "active", "completed", "environments", "test_users", "settings"];
+const VALID_TABS = ["all", "needs_review", "active", "completed", "environments", "test_users", "settings", "generations"];
 
 export default function GenerationPage() {
   const { projectId, genId } = useParams();
@@ -344,6 +346,7 @@ export default function GenerationPage() {
             <Tab icon={<DnsIcon fontSize="small" />} iconPosition="start" label="Environments" value="environments" />
             <Tab icon={<PersonIcon fontSize="small" />} iconPosition="start" label="Test Users" value="test_users" />
             <Tab icon={<SettingsIcon fontSize="small" />} iconPosition="start" label="Settings" value="settings" />
+            <Tab icon={<HistoryIcon fontSize="small" />} iconPosition="start" label="Generations" value="generations" />
           </Tabs>
 
           {(mainTab === "all" || mainTab === "needs_review") && (
@@ -395,6 +398,14 @@ export default function GenerationPage() {
               projectId={projectId}
               isAdmin={isAdmin}
               gen={gen}
+            />
+          )}
+
+          {mainTab === "generations" && (
+            <GenerationsTab
+              projectId={projectId}
+              thisGenId={genId}
+              isAdmin={isAdmin}
             />
           )}
         </>

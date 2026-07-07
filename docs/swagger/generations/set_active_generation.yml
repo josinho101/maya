@@ -1,0 +1,38 @@
+tags:
+  - Generations
+summary: Set a generation as the active test-case set
+description: >
+  Marks the specified generation as the active one for this project.
+  Subsequent test executions will use this generation's test cases.
+  Only finalised generations (REVIEW, APPROVED, STOPPED) can be activated.
+security:
+  - Bearer: []
+parameters:
+  - in: path
+    name: project_id
+    required: true
+    schema:
+      type: string
+  - in: path
+    name: gen_id
+    required: true
+    schema:
+      type: string
+responses:
+  200:
+    description: Active generation updated
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            current_generation_id:
+              type: string
+  400:
+    description: Generation is not in a finalised state
+  401:
+    description: Authentication required
+  403:
+    description: Admin role required
+  404:
+    description: Project or generation not found

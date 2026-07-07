@@ -77,7 +77,9 @@ export default function ProjectDetailPage() {
       setExecutions(execs);
       setEnvironments(envs);
 
-      const latestGen = gens.find((g) => ["REVIEW", "APPROVED", "STOPPED"].includes(g.status));
+      const latestGen =
+        gens.find((g) => g.is_active) ||
+        gens.find((g) => ["REVIEW", "APPROVED", "STOPPED"].includes(g.status));
       if (latestGen) {
         const genData = await getGeneration(projectId, latestGen.id).catch(() => null);
         const allTestCases = (genData?.testcases?.results || []).flatMap((r) => r.test_cases || []);
@@ -224,7 +226,10 @@ export default function ProjectDetailPage() {
   const swagger = project.swagger;
   const hasAnyGeneration = generations.length > 0;
   const activeGen = generations.find((g) => ACTIVE_GEN_STATUSES.includes(g.status));
-  const latestGen = generations.find((g) => ["REVIEW", "APPROVED", "STOPPED"].includes(g.status)) || generations[0];
+  const latestGen =
+    generations.find((g) => g.is_active) ||
+    generations.find((g) => ["REVIEW", "APPROVED", "STOPPED"].includes(g.status)) ||
+    generations[0];
 
   const genRows = generations.map((g) => ({ kind: "generation", id: g.id, status: g.status, created_at: g.created_at }));
   const scenarioRows = scenarioJobs.map((j) => ({ kind: "scenario", id: j.id, status: j.status, created_at: j.created_at, job: j }));

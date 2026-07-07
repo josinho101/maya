@@ -110,7 +110,9 @@ def update(project_id, name=None, description=None):
             p["updated_at"] = datetime.now(timezone.utc).isoformat()
             projects[i] = p
             _save_projects(projects)
-            save_json(data_path(p["slug"], "meta.json"), p)
+            # Preserve extra fields in meta.json (e.g. current_generation_id)
+            existing_meta = load_json(data_path(p["slug"], "meta.json"), default={})
+            save_json(data_path(p["slug"], "meta.json"), {**existing_meta, **p})
             logger.info("Project updated id=%s slug=%s", project_id, p["slug"])
             return p
 
