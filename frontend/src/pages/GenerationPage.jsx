@@ -27,13 +27,14 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import LockIcon from "@mui/icons-material/Lock";
 import SettingsIcon from "@mui/icons-material/Settings";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   getGeneration, editTestCase, deleteTestCase, approveGeneration, approveTestCase,
   executeGeneration, triggerGeneration, stopGeneration, listScenarioJobs, stopScenarioJob,
   listEnvironments, updateEnvironmentNames, deleteEnvironment,
   listTestUsers, deleteTestUser,
-  getSettings, saveSettings, testAuthConfig,
+  getSettings, saveSettings, testAuthConfig, addTestCase,
 } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import StatusChip from "../components/StatusChip";
@@ -104,6 +105,7 @@ export default function GenerationPage() {
   const [tuDeleting, setTuDeleting] = useState(false);
 
   const [tableTestUsers, setTableTestUsers] = useState([]);
+  const [duplicatingTcs, setDuplicatingTcs] = useState(new Set());
 
   const [settingsEnvId,      setSettingsEnvId]      = useState("");
   const [settingsSubTab,     setSettingsSubTab]     = useState("authentication");
@@ -441,6 +443,29 @@ export default function GenerationPage() {
     await editTestCase(projectId, genId, tc.tc_id, { ...tc, test_user_assignments: assignments });
     await fetchGen();
     setToast({ open: true, message: "Test user assignment saved" });
+  };
+
+  const handleDuplicate = async (tc, result) => {
+    setDuplicatingTcs((prev) => new Set(prev).add(tc.tc_id));
+    try {
+      const { tc_id, source, needs_review, ...rest } = tc;
+      await addTestCase(projectId, genId, {
+        ...rest,
+        test_scenario: `${tc.test_scenario} (Duplicate)`,
+        endpoint: result.endpoint,
+        method: result.method,
+      });
+      await fetchGen();
+      setToast({ open: true, message: "Test case duplicated" });
+    } catch (e) {
+      setError(e.response?.data?.error || "Failed to duplicate test case");
+    } finally {
+      setDuplicatingTcs((prev) => {
+        const next = new Set(prev);
+        next.delete(tc.tc_id);
+        return next;
+      });
+    }
   };
 
   const handleSave = async (updated) => {
@@ -1186,7 +1211,7 @@ export default function GenerationPage() {
                           {result.requires_auth && <TableCell sx={{ width: 160 }}>Test User</TableCell>}
                           <TableCell sx={{ width: 150 }}>Test case Role</TableCell>
                           <TableCell sx={{ width: 70 }}>Expected Status</TableCell>
-                          <TableCell align="right" sx={{ width: 90 }}>Actions</TableCell>
+                          <TableCell align="left" sx={{ width: 90 }}>Actions</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -1279,6 +1304,17 @@ export default function GenerationPage() {
                                       onClick={() => setEditTarget({ tc, endpoint: result.endpoint, method: result.method, requiresAuth: result.requires_auth })}
                                     >
                                       <EditIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                  <Tooltip title="Duplicate test case">
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handleDuplicate(tc, result)}
+                                      disabled={duplicatingTcs.has(tc.tc_id)}
+                                    >
+                                      {duplicatingTcs.has(tc.tc_id)
+                                        ? <CircularProgress size={16} />
+                                        : <ContentCopyIcon fontSize="small" />}
                                     </IconButton>
                                   </Tooltip>
                                   <Tooltip title="Delete test case">
