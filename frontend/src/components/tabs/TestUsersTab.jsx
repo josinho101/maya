@@ -14,7 +14,7 @@ import { listTestUsers, deleteTestUser } from "../../api/client";
 import AddTestUserDialog from "../AddTestUserDialog";
 import ClosableDialogTitle from "../ClosableDialogTitle";
 
-export default function TestUsersTab({ environments, projectId, isAdmin }) {
+export default function TestUsersTab({ environments, projectId, isAdmin, onUsersChanged }) {
   const [tuSelectedEnvId, setTuSelectedEnvId] = useState("");
   const [testUsers, setTestUsers] = useState([]);
   const [tuLoading, setTuLoading] = useState(false);
@@ -59,6 +59,7 @@ export default function TestUsersTab({ environments, projectId, isAdmin }) {
     setAddTuOpen(false);
     setEditTuTarget(null);
     setTestUsers(updated);
+    if (onUsersChanged) onUsersChanged();
   };
 
   const handleTuDelete = async () => {
@@ -66,6 +67,7 @@ export default function TestUsersTab({ environments, projectId, isAdmin }) {
       setTuDeleting(true);
       setTestUsers(await deleteTestUser(projectId, tuSelectedEnvId, deleteTuTarget.id));
       setDeleteTuTarget(null);
+      if (onUsersChanged) onUsersChanged();
     } catch (e) {
       setError(e.response?.data?.error || "Failed to delete test user");
     } finally {

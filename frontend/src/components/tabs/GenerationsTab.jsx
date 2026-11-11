@@ -21,6 +21,19 @@ function formatDate(iso) {
   });
 }
 
+function formatDuration(startIso, endIso) {
+  if (!startIso || !endIso) return "—";
+  const secs = Math.round((new Date(endIso) - new Date(startIso)) / 1000);
+  if (secs < 0) return "—";
+  if (secs < 60) return `${secs}s`;
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  if (m < 60) return s > 0 ? `${m}m ${s}s` : `${m}m`;
+  const h = Math.floor(m / 60);
+  const rem = m % 60;
+  return rem > 0 ? `${h}h ${rem}m` : `${h}h`;
+}
+
 export default function GenerationsTab({ projectId, thisGenId, isAdmin, onActiveChanged, onReviewableCountChange }) {
   const [generations, setGenerations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -134,6 +147,7 @@ export default function GenerationsTab({ projectId, thisGenId, isAdmin, onActive
             <TableCell>Generation ID</TableCell>
             <TableCell align="right">Test Cases</TableCell>
             <TableCell>Created</TableCell>
+            <TableCell>Duration</TableCell>
             <TableCell>Status</TableCell>
             {isAdmin && <TableCell align="right">Delete</TableCell>}
           </TableRow>

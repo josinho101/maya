@@ -80,14 +80,19 @@ export default function GenerationPage() {
 
   useEffect(() => { fetchEnvironments(); }, [fetchEnvironments]);
 
-  useEffect(() => {
+  const refreshTableTestUsers = useCallback(async () => {
     if (!selectedEnvId) { setTableTestUsers([]); return; }
     setTestUsersLoading(true);
-    listTestUsers(projectId, selectedEnvId)
-      .then(setTableTestUsers)
-      .catch(() => setTableTestUsers([]))
-      .finally(() => setTestUsersLoading(false));
+    try {
+      setTableTestUsers(await listTestUsers(projectId, selectedEnvId));
+    } catch {
+      setTableTestUsers([]);
+    } finally {
+      setTestUsersLoading(false);
+    }
   }, [projectId, selectedEnvId]);
+
+  useEffect(() => { refreshTableTestUsers(); }, [refreshTableTestUsers]);
 
   const applyGenUpdate = useCallback((data) => {
     setGen(data);
@@ -410,6 +415,7 @@ export default function GenerationPage() {
               environments={environments}
               projectId={projectId}
               isAdmin={isAdmin}
+              onUsersChanged={refreshTableTestUsers}
             />
           )}
 

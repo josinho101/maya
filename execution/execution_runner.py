@@ -21,6 +21,21 @@ class ExecutionRunner:
             users_by_id = {u["id"]: u for u in (test_users or [])}
             auth_manager = AuthManager(auth_config or {}, users_by_id)
 
+            # test_user_assignments are baked into the saved file at generation
+            # time. If users were added after generation, backfill missing env
+            # assignments so the auth header is injected correctly.
+            if env_id and test_users:
+                default_user_id = test_users[0]["id"]
+                for endpoint_result in generated_test_cases.get("results", []):
+                    if not endpoint_result.get("requires_auth"):
+                        continue
+                    for tc in endpoint_result.get("test_cases", []):
+                        if tc.get("auth_override"):
+                            continue
+                        assignments = tc.get("test_user_assignments") or {}
+                        if not assignments.get(env_id):
+                            tc["test_user_assignments"] = {**assignments, env_id: default_user_id}
+
             try:
                 execution_results = APIExecutor.execute(
                     project=generated_test_cases["project"],
